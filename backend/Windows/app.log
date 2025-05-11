@@ -1,0 +1,158 @@
+2025-05-07 10:47:15,264 - INFO - Start checking system status
+2025-05-07 10:47:15,341 - INFO - System status checked. CPU Usage: 0.0%
+2025-05-07 10:47:15,399 - INFO - Request: GET http://127.0.0.1:8000/system_status | Status: 200 | Process Time: 0.1357s
+2025-05-07 10:47:33,510 - INFO - Start collecting system information
+2025-05-07 10:47:34,345 - INFO - Request: GET http://127.0.0.1:8000/system_information | Status: 200 | Process Time: 0.8354s
+2025-05-07 10:47:47,004 - INFO - Request: GET http://127.0.0.1:8000/system_network | Status: 200 | Process Time: 1.0460s
+2025-05-07 10:48:17,457 - INFO - Request: GET http://127.0.0.1:8000/system_config | Status: 200 | Process Time: 0.9808s
+2025-05-07 12:29:13,186 - INFO - Request: GET http://localhost:8000/health | Status: 200 | Process Time: 0.0000s
+2025-05-07 12:29:44,697 - INFO - Request: GET http://localhost:8000/health | Status: 200 | Process Time: 0.0010s
+2025-05-07 12:29:44,739 - INFO - Start checking system status
+2025-05-07 12:29:44,838 - INFO - System status checked. CPU Usage: 0.0%
+2025-05-07 12:29:44,848 - INFO - Request: GET http://127.0.0.1:8000/system_status | Status: 200 | Process Time: 0.1104s
+2025-05-07 12:29:44,922 - INFO - Start collecting system information
+2025-05-07 12:29:45,499 - INFO - Request: GET http://127.0.0.1:8000/system_information | Status: 200 | Process Time: 0.5769s
+2025-05-07 12:29:45,815 - INFO - Request: GET http://127.0.0.1:8000/system_config | Status: 200 | Process Time: 0.2503s
+2025-05-07 12:29:46,669 - INFO - Request: GET http://127.0.0.1:8000/system_network | Status: 200 | Process Time: 0.7923s
+2025-05-07 12:29:54,277 - INFO - Request: GET http://127.0.0.1:8000/system_process | Status: 200 | Process Time: 7.5307s
+2025-05-07 12:29:56,228 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 1.9061s
+2025-05-07 12:29:56,561 - INFO - Request: GET http://127.0.0.1:8000/detect_tactics | Status: 200 | Process Time: 0.2563s
+2025-05-07 12:29:58,221 - INFO - Request: GET http://127.0.0.1:8000/detect_start | Status: 200 | Process Time: 1.6118s
+2025-05-07 12:29:58,964 - INFO - Request: GET http://127.0.0.1:8000/detect_telnet | Status: 200 | Process Time: 0.6630s
+2025-05-07 12:29:59,041 - INFO - 开始收集系统更新信息
+2025-05-07 12:29:59,502 - INFO - Request: GET http://127.0.0.1:8000/detect_update | Status: 200 | Process Time: 0.4605s
+2025-05-07 12:32:03,905 - INFO - Request: GET http://localhost:8000/health | Status: 200 | Process Time: 0.0000s
+2025-05-07 12:32:03,923 - INFO - Start checking system status
+2025-05-07 12:32:04,004 - INFO - System status checked. CPU Usage: 4.6%
+2025-05-07 12:32:04,014 - INFO - Request: GET http://127.0.0.1:8000/system_status | Status: 200 | Process Time: 0.0912s
+2025-05-07 12:32:04,084 - INFO - Start collecting system information
+2025-05-07 12:32:04,584 - INFO - Request: GET http://127.0.0.1:8000/system_information | Status: 200 | Process Time: 0.5004s
+2025-05-07 12:32:04,874 - INFO - Request: GET http://127.0.0.1:8000/system_config | Status: 200 | Process Time: 0.2340s
+2025-05-07 12:32:05,710 - INFO - Request: GET http://127.0.0.1:8000/system_network | Status: 200 | Process Time: 0.7799s
+2025-05-07 12:32:12,864 - INFO - Request: GET http://127.0.0.1:8000/system_process | Status: 200 | Process Time: 7.0879s
+2025-05-07 12:32:14,209 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 1.3009s
+2025-05-07 12:32:14,523 - INFO - Request: GET http://127.0.0.1:8000/detect_tactics | Status: 200 | Process Time: 0.2560s
+2025-05-07 12:32:15,794 - INFO - Request: GET http://127.0.0.1:8000/detect_start | Status: 200 | Process Time: 1.2062s
+2025-05-07 12:32:16,492 - INFO - Request: GET http://127.0.0.1:8000/detect_telnet | Status: 200 | Process Time: 0.6462s
+2025-05-07 12:32:16,571 - INFO - 开始收集系统更新信息
+2025-05-07 12:32:17,027 - INFO - Request: GET http://127.0.0.1:8000/detect_update | Status: 200 | Process Time: 0.4569s
+2025-05-07 12:44:10,567 - INFO - Request: GET http://localhost:8000/health | Status: 200 | Process Time: 0.0000s
+2025-05-07 12:44:10,618 - INFO - Start checking system status
+2025-05-07 12:44:10,724 - INFO - System status checked. CPU Usage: 0.0%
+2025-05-07 12:44:10,746 - INFO - Request: GET http://127.0.0.1:8000/system_status | Status: 200 | Process Time: 0.1289s
+2025-05-07 12:44:10,817 - INFO - Start collecting system information
+2025-05-07 12:44:11,375 - INFO - Request: GET http://127.0.0.1:8000/system_information | Status: 200 | Process Time: 0.5577s
+2025-05-07 12:44:11,720 - INFO - Request: GET http://127.0.0.1:8000/system_config | Status: 200 | Process Time: 0.2678s
+2025-05-07 12:44:12,564 - INFO - Request: GET http://127.0.0.1:8000/system_network | Status: 200 | Process Time: 0.7681s
+2025-05-07 12:44:19,734 - INFO - Request: GET http://127.0.0.1:8000/system_process | Status: 200 | Process Time: 7.1019s
+2025-05-07 12:44:21,548 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 1.7679s
+2025-05-07 12:44:21,857 - INFO - Request: GET http://127.0.0.1:8000/detect_tactics | Status: 200 | Process Time: 0.2469s
+2025-05-07 12:44:23,136 - INFO - Request: GET http://127.0.0.1:8000/detect_start | Status: 200 | Process Time: 1.2142s
+2025-05-07 12:44:23,813 - INFO - Request: GET http://127.0.0.1:8000/detect_telnet | Status: 200 | Process Time: 0.6293s
+2025-05-07 12:44:23,894 - INFO - 开始收集系统更新信息
+2025-05-07 12:44:24,386 - INFO - Request: GET http://127.0.0.1:8000/detect_update | Status: 200 | Process Time: 0.4919s
+2025-05-09 15:28:42,714 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 1.3899s
+2025-05-09 15:29:04,951 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 1.0200s
+2025-05-09 15:30:05,141 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 22.5795s
+2025-05-09 15:30:22,844 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 23.2225s
+2025-05-09 15:31:13,956 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 22.4459s
+2025-05-09 15:37:59,483 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 21.9473s
+2025-05-09 15:38:33,551 - INFO - Start checking system status
+2025-05-09 15:38:35,629 - INFO - System status checked. CPU Usage: 5.5%
+2025-05-09 15:38:35,637 - INFO - Request: GET http://127.0.0.1:8000/system_status | Status: 200 | Process Time: 2.0862s
+2025-05-09 15:44:50,188 - INFO - Request: GET http://127.0.0.1:8000/system_config | Status: 200 | Process Time: 0.8108s
+2025-05-09 15:48:21,366 - INFO - Request: GET http://127.0.0.1:8000/system_config | Status: 200 | Process Time: 0.2170s
+2025-05-09 15:48:32,302 - INFO - Start collecting system information
+2025-05-09 15:48:32,757 - INFO - Request: GET http://127.0.0.1:8000/system_information | Status: 200 | Process Time: 0.4552s
+2025-05-09 15:50:37,900 - INFO - Start collecting system information
+2025-05-09 15:50:38,331 - INFO - Request: GET http://127.0.0.1:8000/system_information | Status: 200 | Process Time: 0.4323s
+2025-05-09 15:51:44,993 - INFO - Request: GET http://localhost:8000/health | Status: 200 | Process Time: 0.0000s
+2025-05-09 16:01:22,253 - INFO - Request: GET http://localhost:8000/health | Status: 200 | Process Time: 0.0023s
+2025-05-09 16:19:46,381 - INFO - Request: GET http://127.0.0.1:8000/ | Status: 404 | Process Time: 0.0000s
+2025-05-09 16:19:46,460 - INFO - Request: GET http://127.0.0.1:8000/favicon.ico | Status: 404 | Process Time: 0.0000s
+2025-05-09 16:20:08,584 - INFO - Request: GET http://localhost:8000/health | Status: 200 | Process Time: 0.0021s
+2025-05-09 18:00:27,531 - INFO - Request: GET http://127.0.0.1:8000/rules_account | Status: 200 | Process Time: 1.0582s
+2025-05-09 18:13:58,372 - INFO - Request: GET http://127.0.0.1:8000/rules_account | Status: 200 | Process Time: 0.2605s
+2025-05-09 18:14:55,195 - INFO - Request: GET http://127.0.0.1:8000/rules_log | Status: 200 | Process Time: 0.1237s
+2025-05-09 18:26:00,208 - INFO - Request: GET http://127.0.0.1:8000/rules_permissions | Status: 200 | Process Time: 0.1650s
+2025-05-09 18:32:24,867 - INFO - Request: GET http://127.0.0.1:8000/rules_protocols | Status: 200 | Process Time: 0.4457s
+2025-05-09 18:36:20,856 - INFO - Request: GET http://127.0.0.1:8000/rules_protocols | Status: 200 | Process Time: 0.0859s
+2025-05-09 18:36:25,742 - INFO - Request: GET http://127.0.0.1:8000/rules_protocols | Status: 200 | Process Time: 0.0670s
+2025-05-09 18:36:30,027 - INFO - Request: GET http://127.0.0.1:8000/rules_protocols | Status: 200 | Process Time: 0.0568s
+2025-05-09 18:39:58,803 - INFO - Request: GET http://127.0.0.1:8000/rules_protocols | Status: 200 | Process Time: 0.0706s
+2025-05-09 18:43:27,817 - INFO - Request: GET http://127.0.0.1:8000/rules_protocols | Status: 200 | Process Time: 0.0982s
+2025-05-09 18:43:53,629 - INFO - Request: GET http://127.0.0.1:8000/rules_protocols | Status: 200 | Process Time: 0.0834s
+2025-05-09 18:47:10,314 - INFO - Request: GET http://127.0.0.1:8000/rules_protocols | Status: 200 | Process Time: 0.0762s
+2025-05-09 18:56:48,143 - INFO - Request: GET http://127.0.0.1:8000/rules_service | Status: 200 | Process Time: 0.8469s
+2025-05-09 19:06:29,657 - INFO - Request: GET http://127.0.0.1:8000/rules_file | Status: 404 | Process Time: 0.0000s
+2025-05-09 19:09:10,975 - INFO - Request: GET http://127.0.0.1:8000/rules_file | Status: 200 | Process Time: 0.2338s
+2025-05-09 19:09:39,564 - INFO - Start collecting system information
+2025-05-09 19:09:40,920 - INFO - Request: GET http://127.0.0.1:8000/rules_patch | Status: 200 | Process Time: 1.3551s
+2025-05-09 19:13:00,332 - INFO - Request: GET http://127.0.0.1:8000/rules_file | Status: 200 | Process Time: 0.1895s
+2025-05-09 19:14:55,497 - INFO - Request: GET http://127.0.0.1:8000/rules_file | Status: 200 | Process Time: 0.2171s
+2025-05-09 19:15:20,232 - INFO - Request: GET http://127.0.0.1:8000/rules_file | Status: 200 | Process Time: 0.2063s
+2025-05-09 19:20:45,816 - INFO - Request: GET http://127.0.0.1:8000/rules_guard | Status: 200 | Process Time: 0.1419s
+2025-05-09 19:30:04,986 - INFO - Request: GET http://127.0.0.1:8000/rules_other | Status: 200 | Process Time: 0.4570s
+2025-05-10 15:48:15,305 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_account | Status: 422 | Process Time: 0.0028s
+2025-05-10 15:48:15,344 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_log | Status: 422 | Process Time: 0.0000s
+2025-05-10 15:48:15,389 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_permissions | Status: 422 | Process Time: 0.0000s
+2025-05-10 15:48:15,454 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_protocols | Status: 422 | Process Time: 0.0000s
+2025-05-10 15:48:15,496 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_service | Status: 422 | Process Time: 0.0010s
+2025-05-10 15:48:15,542 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_file | Status: 422 | Process Time: 0.0000s
+2025-05-10 15:48:15,588 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_patch | Status: 422 | Process Time: 0.0018s
+2025-05-10 15:48:15,636 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_other | Status: 422 | Process Time: 0.0020s
+2025-05-10 15:49:14,996 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_account | Status: 422 | Process Time: 0.0010s
+2025-05-10 15:51:11,258 - INFO - Request: GET http://127.0.0.1:8000/rules | Status: 405 | Process Time: 0.0000s
+2025-05-10 15:51:11,363 - INFO - Request: GET http://127.0.0.1:8000/favicon.ico | Status: 404 | Process Time: 0.0000s
+2025-05-10 15:51:27,266 - INFO - Request: POST http://127.0.0.1:8000/rules | Status: 422 | Process Time: 0.0021s
+2025-05-10 15:56:05,236 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_account | Status: 200 | Process Time: 0.8365s
+2025-05-10 15:56:12,340 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_account | Status: 200 | Process Time: 0.2378s
+2025-05-10 15:56:12,513 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_log | Status: 200 | Process Time: 0.1289s
+2025-05-10 15:56:12,670 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_permissions | Status: 200 | Process Time: 0.0913s
+2025-05-10 15:56:13,191 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_protocols | Status: 200 | Process Time: 0.4562s
+2025-05-10 15:56:14,132 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_service | Status: 200 | Process Time: 0.8732s
+2025-05-10 15:56:14,354 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_file | Status: 200 | Process Time: 0.1585s
+2025-05-10 15:56:14,397 - INFO - Start collecting system information
+2025-05-10 15:56:15,285 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_patch | Status: 200 | Process Time: 0.8897s
+2025-05-10 15:56:15,636 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_other | Status: 200 | Process Time: 0.2965s
+2025-05-10 15:57:22,013 - INFO - Start checking system status
+2025-05-10 15:57:24,294 - INFO - System status checked. CPU Usage: 5.9%
+2025-05-10 15:57:24,300 - INFO - Request: GET http://127.0.0.1:8000/system_status | Status: 200 | Process Time: 2.2882s
+2025-05-10 15:57:25,367 - INFO - Request: GET http://127.0.0.1:8000/system_network | Status: 200 | Process Time: 1.0385s
+2025-05-10 15:57:32,513 - INFO - Request: GET http://127.0.0.1:8000/system_process | Status: 200 | Process Time: 7.0798s
+2025-05-10 15:57:57,129 - INFO - Request: GET http://127.0.0.1:8000/system_running | Status: 200 | Process Time: 24.5541s
+2025-05-10 15:57:57,458 - INFO - Request: GET http://127.0.0.1:8000/detect_tactics | Status: 200 | Process Time: 0.2723s
+2025-05-10 15:57:58,822 - INFO - Request: GET http://127.0.0.1:8000/detect_start | Status: 200 | Process Time: 1.3170s
+2025-05-10 15:57:59,520 - INFO - Request: GET http://127.0.0.1:8000/detect_telnet | Status: 200 | Process Time: 0.6574s
+2025-05-10 15:57:59,607 - INFO - 开始收集系统更新信息
+2025-05-10 15:58:00,056 - INFO - Request: GET http://127.0.0.1:8000/detect_update | Status: 200 | Process Time: 0.4487s
+2025-05-10 15:58:00,374 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_account | Status: 200 | Process Time: 0.2428s
+2025-05-10 15:58:00,553 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_log | Status: 200 | Process Time: 0.1114s
+2025-05-10 15:58:00,688 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_permissions | Status: 200 | Process Time: 0.0831s
+2025-05-10 15:58:00,808 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_protocols | Status: 200 | Process Time: 0.0542s
+2025-05-10 15:58:01,561 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_service | Status: 200 | Process Time: 0.6969s
+2025-05-10 15:58:01,742 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_file | Status: 200 | Process Time: 0.1380s
+2025-05-10 15:58:01,811 - INFO - Start collecting system information
+2025-05-10 15:58:02,295 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_patch | Status: 200 | Process Time: 0.4838s
+2025-05-10 15:58:02,378 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_other | Status: 200 | Process Time: 0.0226s
+2025-05-10 15:58:02,434 - INFO - Request: GET http://127.0.0.1:8000/health | Status: 200 | Process Time: 0.0017s
+2025-05-10 16:09:43,488 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_account | Status: 200 | Process Time: 0.2800s
+2025-05-10 16:09:43,673 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_log | Status: 200 | Process Time: 0.1293s
+2025-05-10 16:09:43,820 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_permissions | Status: 200 | Process Time: 0.0973s
+2025-05-10 16:09:43,979 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_protocols | Status: 200 | Process Time: 0.0828s
+2025-05-10 16:09:44,720 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_service | Status: 200 | Process Time: 0.6680s
+2025-05-10 16:09:44,953 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_file | Status: 200 | Process Time: 0.1680s
+2025-05-10 16:09:45,002 - INFO - Start collecting system information
+2025-05-10 16:09:45,501 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_patch | Status: 200 | Process Time: 0.4997s
+2025-05-10 16:09:45,585 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_other | Status: 200 | Process Time: 0.0362s
+2025-05-10 16:10:50,837 - INFO - Request: POST http://127.0.0.1:8000/rules | Status: 422 | Process Time: 0.0000s
+2025-05-10 16:11:19,928 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_account | Status: 200 | Process Time: 0.3139s
+2025-05-10 16:21:19,237 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_account | Status: 200 | Process Time: 0.3781s
+2025-05-10 16:21:19,418 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_log | Status: 200 | Process Time: 0.1632s
+2025-05-10 16:21:19,609 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_permissions | Status: 200 | Process Time: 0.1419s
+2025-05-10 16:21:19,771 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_protocols | Status: 200 | Process Time: 0.1195s
+2025-05-10 16:21:20,536 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_service | Status: 200 | Process Time: 0.6960s
+2025-05-10 16:21:20,750 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_file | Status: 200 | Process Time: 0.1540s
+2025-05-10 16:21:20,817 - INFO - Start collecting system information
+2025-05-10 16:21:21,296 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_patch | Status: 200 | Process Time: 0.4797s
+2025-05-10 16:21:21,395 - INFO - Request: POST http://127.0.0.1:8000/rules?id=rules_other | Status: 200 | Process Time: 0.0363s
