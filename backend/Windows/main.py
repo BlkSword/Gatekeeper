@@ -9,7 +9,7 @@ import os
 
 from fastapi import FastAPI, Request, Query 
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel  # 新增pydantic模型导入
+from pydantic import BaseModel  
 
 from rules.rules_account import get_rules_account
 from rules.rules_log import get_rules_log
