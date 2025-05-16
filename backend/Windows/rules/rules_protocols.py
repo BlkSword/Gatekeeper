@@ -1,3 +1,7 @@
+# 协议安全检测
+# 检测内容：Windows防火墙启用检测、SYN攻击保护检测（基于注册表）、远程桌面端口修改检测（基于注册表）
+
+
 import platform
 import subprocess
 import re

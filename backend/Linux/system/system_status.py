@@ -31,7 +31,6 @@ def check_internet():
     total_disk_space = 0
     total_disk_used = 0
     
-    # 获取所有磁盘分区信息（移除Windows特有的'fixed'条件）
     for partition in psutil.disk_partitions():
         try:
             usage = psutil.disk_usage(partition.mountpoint)
@@ -55,7 +54,6 @@ def check_internet():
 
     
     def _check_internet_connection():
-        # 修改ping参数为Linux适用的'-c'（Windows用'-n'）
         try:
             subprocess.check_output(["ping", "-c", "1", "8.8.8.8"], timeout=2)
             return "已联网"

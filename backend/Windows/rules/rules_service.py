@@ -1,3 +1,5 @@
+# 服务相关检测
+
 import platform
 import subprocess
 import re

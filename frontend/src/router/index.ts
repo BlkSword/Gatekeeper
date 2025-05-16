@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
+import CheckView from '../views/CheckView.vue';
+import SettingsView from '../views/SettingsView.vue';
 
 const routes = [
   {
@@ -10,12 +12,12 @@ const routes = [
   {
     path: '/check',
     name: 'Check',
-    component: () => import('../views/CheckView.vue')
+    component: CheckView
   },
   {
     path: '/settings',
     name: 'settings',
-    component: () => import('../views/SettingsView.vue')
+    component: SettingsView
   }
 ];
 

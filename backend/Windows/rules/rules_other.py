@@ -3,7 +3,6 @@
 # DLL 劫持风险检测（无用户组对系统 DLL 有写权限​）、受控文件夹访问
 
 
-
 import platform
 import subprocess
 import re
@@ -70,10 +69,10 @@ def get_rules_other():
         except Exception as e:
             return {"error": str(e)}
 
-    # DLL劫持风险检测（系统DLL写权限检查）
+    # DLL劫持风险检测
     def check_dll_hijack():
         try:
-            # 检查System32目录下的DLL权限（示例检查user32.dll）
+            # 检查System32目录下的DLL权限
             dll_path = r"C:\Windows\System32\user32.dll"
             perm_output = subprocess.getoutput(f'icacls "{dll_path}"')
             # 检测是否存在非管理员组的写权限（排除BUILTIN\Administrators）

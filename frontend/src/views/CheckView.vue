@@ -1,17 +1,16 @@
 <template>
-  <div class="check-container">
-    <h1>规则检测</h1>
-    <p>规则检测功能开发中...</p>
+  <div class="full-container">
+    <h1>基线检测</h1>
+    <p>基线检测区域</p>
   </div>
 </template>
 
-<script setup>
-
-</script>
-
 <style scoped>
-.check-container {
-  padding: 20px;
-  text-align: left;
+.full-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 </style>

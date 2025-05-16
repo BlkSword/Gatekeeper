@@ -21,7 +21,7 @@ def get_rules_account():
                           else re.search(r"Minimum password age\s+(\d+)", policy).group(1) if re.search(r"Minimum password age", policy) else "未配置",
             "密码历史记录": "未配置" if re.search(r"Length of password history maintained\s+None", policy) 
                      else re.search(r"Length of password history maintained\s+(\d+)", policy).group(1) if re.search(r"Length of password history", policy) else "未配置",
-            "密码长度最小值": "未配置" if re.search(r"Minimum password length\s+0", policy)  # net accounts中0表示未配置
+            "密码长度最小值": "未配置" if re.search(r"Minimum password length\s+0", policy)  
                           else re.search(r"Minimum password length\s+(\d+)", policy).group(1) if re.search(r"Minimum password length", policy) else "未配置"
         }
     

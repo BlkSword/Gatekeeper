@@ -2,12 +2,24 @@
 
 import sqlite3  
 import os  
+import time
+import logging
+import traceback
+from logging.handlers import RotatingFileHandler
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from rules.rules_account import get_rules_account
+from rules.rules_authorized import get_rules_authorized
+from rules.rules_file import get_rules_file
+from rules.rules_kernel import get_rules_kernel
+from rules.rules_log import get_rules_log
+from rules.rules_other import get_rules_other
+from rules.rules_permissions import get_rules_permissions
+from rules.rules_service import get_rules_service
+
 from system.system_status import check_internet
-from system.system_information import get_information_info
-from system.system_config import get_system_config
 from system.system_network import get_network_status
 from system.system_process import get_process_info
 from system.system_running import get_running_processes
@@ -17,17 +29,15 @@ from detect.detect_file import get_detect_file
 from detect.detect_network import get_detect_network
 from detect.detect_serve import get_detect_serve
 
-
-import time
-import logging
-import traceback
-from logging.handlers import RotatingFileHandler
+from other.health_check import get_health_check
 
 
 DB_PATH = './database/system.db'
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 DB_DO = './database/detect.db'
 os.makedirs(os.path.dirname(DB_DO), exist_ok=True)
+DB_Rules = './database/rules.db'  # 新增规则数据库路径
+os.makedirs(os.path.dirname(DB_Rules), exist_ok=True)
 
 
 app = FastAPI()
@@ -59,11 +69,10 @@ def insert_data_to_table(db_path: str, table_name: str, data: any):
     except Exception as e:
         logger.error(f"{table_name}数据库插入失败: {str(e)}\n{traceback.format_exc()}")
 
-# 应用启动时初始化数据库表（新增）
+
+# 应用启动时初始化数据库表
 # 系统相关表
 create_table(DB_PATH, "system_status")
-create_table(DB_PATH, "system_information")
-create_table(DB_PATH, "system_config")
 create_table(DB_PATH, "system_network")
 create_table(DB_PATH, "system_process")
 create_table(DB_PATH, "system_running")
@@ -73,6 +82,15 @@ create_table(DB_DO, "detect_account")
 create_table(DB_DO, "detect_file")
 create_table(DB_DO, "detect_network")
 create_table(DB_DO, "detect_serve")
+
+create_table(DB_Rules, "rules_account")
+create_table(DB_Rules, "rules_authorized")
+create_table(DB_Rules, "rules_file")
+create_table(DB_Rules, "rules_kernel")
+create_table(DB_Rules, "rules_log")
+create_table(DB_Rules, "rules_other")
+create_table(DB_Rules, "rules_permissions")
+create_table(DB_Rules, "rules_service")
 
 request_stats = {"total_requests": 0, "avg_response_time": 0.0}
 
@@ -119,13 +137,13 @@ async def add_process_time_header(request: Request, call_next):
         )
 
 
-# 系统状态
+
+##########################——————————————————主机检测层——————————————————##########################
+
+# 健康检查接口
 @app.get("/health", tags=["System"])
 def health_check():
-    return {"status": "ok"}
-
-
-#########实时监控层#########
+    return get_health_check()
 
 # 获取系统使用情况
 @app.get("/system_status", tags=["System"])
@@ -134,19 +152,6 @@ def system_status():
     insert_data_to_table(DB_PATH, "system_status", data)
     return data
 
-# 获取系统配置信息
-@app.get("/system_information", tags=["System"])
-def system_information():
-    data = get_information_info()
-    insert_data_to_table(DB_PATH, "system_information", data)
-    return data
-
-# 获取系统配置信息
-@app.get("/system_config", tags=["System"])
-def system_config():
-    data = get_system_config()
-    insert_data_to_table(DB_PATH, "system_config", data)
-    return data
 
 # 获取系统网络信息
 @app.get("/system_network", tags=["System"])
@@ -170,7 +175,7 @@ def system_running():
     return data
 
 
-#########实时检测层#########
+##########################——————————————————实时检测层——————————————————##########################
 
 # 账号策略监控
 @app.get("/detect_account", tags=["Detect"])
@@ -201,3 +206,32 @@ def detect_serve():
     return data
 
 
+##########################——————————————————规则检测层——————————————————##########################
+
+# 函数映射字典
+rule_functions = {
+    "rules_account": get_rules_account,
+    "rules_authorized": get_rules_authorized,
+    "rules_file": get_rules_file,
+    "rules_kernel": get_rules_kernel,
+    "rules_log": get_rules_log,
+    "rules_other": get_rules_other,
+    "rules_permissions": get_rules_permissions,
+    "rules_service": get_rules_service
+}
+
+
+@app.post("/rules", tags=["Rules"])
+def rules(id: str = Query(..., description="规则ID参数，如rules_account")):  
+    # 根据ID获取对应的检测函数
+    rule_func = rule_functions.get(id)
+    
+    if not rule_func:
+        return JSONResponse(
+            status_code=400,
+            content={"detail": f"无效的规则ID: {id}，可选值：{list(rule_functions.keys())}"}
+        )
+    
+    data = rule_func()
+    insert_data_to_table(DB_Rules, id, data)
+    return data

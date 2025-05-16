@@ -1,17 +1,16 @@
 <template>
-  <div class="settings-container">
+  <div class="full-container">
     <h1>设置</h1>
-    <p>系统设置功能开发中...</p>
+    <p>设置区域</p>
   </div>
 </template>
 
-<script setup>
-
-</script>
-
 <style scoped>
-.settings-container {
-  padding: 20px;
-  text-align: left;
+.full-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 </style>
