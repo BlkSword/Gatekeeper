@@ -1,7 +1,8 @@
 <template>
   <div class="common-layout layout-container">
     <el-container>
-      <el-aside width="250px">
+      <!-- 仅登录后显示左侧菜单 -->
+      <el-aside v-if="isLoggedIn" width="250px">
         <!-- 顶部导航栏区域 -->
         <div class="top-bar">
           <div class="left-section">
@@ -47,9 +48,13 @@ import { useRouter, useRoute } from 'vue-router';
 
 import './assets/css/Layout.css'
 
-
 const router = useRouter();
 const route = useRoute();
+
+// 计算属性：判断是否已登录
+const isLoggedIn = computed(() => {
+  return localStorage.getItem('token') !== null;
+});
 
 const currentRoute = computed(() => route.path);
 
