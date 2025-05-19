@@ -3,6 +3,7 @@
 # 关键服务状态、系统配置信息
 
 import subprocess
+from fastapi import logger
 import psutil
 import winreg
 
