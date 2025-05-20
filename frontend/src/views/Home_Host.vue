@@ -1,35 +1,31 @@
 <template>
   <div class="full-container">
     <!-- 系统状态概览 -->
-    <el-row :gutter="20" class="overview">
-      <!-- 系统启动时间 -->
-      <el-col :span="12">
+    <el-row :gutter="20">
+      <el-col v-for="(metric, index) in systemMetrics" :key="index" :span="6">
         <el-card class="status-card">
           <div class="metric-item">
-            <h4>系统启动时间</h4>
-            <p>{{ systemInfo.bootTime }}</p>
-          </div>
-        </el-card>
-      </el-col>
-      <!-- 当前时间 -->
-      <el-col :span="12">
-        <el-card class="status-card">
-          <div class="metric-item">
-            <h4>当前时间</h4>
-            <p>{{ currentTime }}</p>
+            <h4>{{ metric.label }}</h4>
+            <el-progress 
+              type="circle" 
+              :percentage="metric.value" 
+              :color="metric.color" 
+              :stroke-width="16"
+              :width="120"
+            />
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 系统资源监控 -->
+    <!-- 网卡流量监控 -->
     <el-row :gutter="20">
       <el-col :span="12">
         <el-card>
           <div slot="header" class="card-header">
-            <span>实时资源监控</span>
+            <span>实时网卡流量监控</span>
           </div>
-          <div ref="realTimeChart" class="chart"></div>
+          <div ref="networkChart" class="chart"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
@@ -151,7 +147,7 @@
     </el-row>
 
     <!-- 底部信息 -->
-    <el-row class="footer">
+    <el-row>
       <el-col :span="24">
         <div class="safety-tips">
           <p>© 2025 System Monitor By XiaoHei</p>
@@ -165,10 +161,33 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts'
 
-// 系统状态数据
-const systemInfo = ref({
-  bootTime: '2025-03-20 08:00:00'
-})
+// 系统状态指标
+const systemMetrics = ref([
+  {
+    label: '系统负载',
+    target: 75,    // 目标值
+    value: 0,      // 初始值设为0
+    color: '#67c23a'
+  },
+  {
+    label: 'CPU使用率',
+    target: 65,
+    value: 0,
+    color: '#f56c6c'
+  },
+  {
+    label: '内存使用率',
+    target: 72,
+    value: 0,
+    color: '#e69c17'
+  },
+  {
+    label: '磁盘使用率',
+    target: 88,
+    value: 0,
+    color: '#409eff'
+  }
+])
 
 // 网络接口信息
 const networkInterfaces = ref([
@@ -176,74 +195,130 @@ const networkInterfaces = ref([
   { interface: 'lo', ip: '127.0.0.1', mask: '255.0.0.0', gateway: '-', status: 'connected' }
 ])
 
+// 网络数据统计
+const networkStats = ref({
+  sent: 123456, // 发送数据量（MB）
+  received: 654321 // 接收数据量（MB）
+})
+
+// 开放端口
+const openPorts = ref(['22', '80', '443', '3389'])
+
 // 进程信息
 const processes = ref([
-  { name: 'System Idle Process', pid: 0, cpu: 1.2, memory: 0.5, path: 'C:\\Windows\\System32', user: 'SYSTEM', permission: '管理员' },
-  { name: 'explorer.exe', pid: 1234, cpu: 5.3, memory: 15.2, path: 'C:\\Windows\\Explorer.EXE', user: 'Administrator', permission: '管理员' },
-  { name: 'chrome.exe', pid: 5678, cpu: 12.7, memory: 30.4, path: 'C:\\Program Files\\Google\\Chrome', user: 'User', permission: '标准用户' }
+  { name: 'System Idle Process', pid: '0', cpu: '0.5', memory: '0.1', path: 'System', user: 'SYSTEM', permission: '管理员' },
+  { name: 'chrome.exe', pid: '1234', cpu: '15.2', memory: '25.3', path: 'C:\\Program Files\\Google\\Chrome', user: 'XiaoHei', permission: '用户' }
 ])
 
-// 服务状态信息
+// 服务信息
 const services = ref([
-  { name: 'Windows Update', status: 'running', pid: 456, path: 'C:\\Windows\\System32\\svchost.exe' },
-  { name: 'Print Spooler', status: 'stopped', pid: '-', path: 'C:\\Windows\\System32\\spoolsv.exe' }
+  { name: 'Windows Update', status: 'running', pid: '456', path: 'C:\\Windows\\system32\\svchost.exe' },
+  { name: 'Print Spooler', status: 'stopped', pid: '-', path: '-' }
 ])
 
 // 防火墙规则
 const firewallRules = ref([
-  { ruleName: '允许HTTP', protocol: 'TCP', direction: 'Inbound', action: 'Allow' },
-  { ruleName: '阻止SSH', protocol: 'TCP', direction: 'Outbound', action: 'Block' }
+  { ruleName: 'Allow HTTP', protocol: 'TCP', direction: 'Inbound', action: 'Allow' },
+  { ruleName: 'Block FTP', protocol: 'FTP', direction: 'Outbound', action: 'Block' }
 ])
 
 // 已安装程序
 const installedApps = ref([
-  { name: 'Google Chrome', version: '120.0.0.0', installDate: '2025-01-15' },
-  { name: 'Notepad++', version: '8.5.1', installDate: '2025-02-01' }
+  { name: 'Google Chrome', version: '120.0.6099.71', installDate: '2023-05-15' },
+  { name: 'Visual Studio Code', version: '1.75.1', installDate: '2023-04-01' }
 ])
 
-// 网络数据统计
-const networkStats = ref({
-  sent: 1250,
-  received: 3420
-})
-const openPorts = ref(['80', '443', '3389', '8080'])
+// 网络流量监控图表
+const networkChart = ref(null)
+let chartInstance = null
+let intervalId = null
 
-// 实时资源监控图表
-const realTimeChart = ref(null)
-
-// 当前时间数据
-const currentTime = ref(formatTime(new Date()))
-
-// 定时更新时间
-let timeInterval = null
-
-function formatTime(date) {
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`
+// 模拟网络流量数据
+const trafficData = {
+  times: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
+  sent: [120, 180, 220, 150, 230, 210, 260],
+  received: [80, 120, 100, 140, 90, 110, 130]
 }
 
+function updateNetworkChart() {
+  if (!chartInstance) return
+  
+  // 时间点
+  const now = new Date()
+  const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
+  trafficData.times.push(timeStr)
+  
+  if (trafficData.times.length > 10) {
+    trafficData.times.shift()
+    trafficData.sent.shift()
+    trafficData.received.shift()
+  }
+  
+  // 模拟新数据
+  trafficData.sent.push(Math.floor(Math.random() * 300))
+  trafficData.received.push(Math.floor(Math.random() * 300))
+  
+  chartInstance.setOption({
+    xAxis: { data: trafficData.times },
+    series: [
+      { data: trafficData.sent },
+      { data: trafficData.received }
+    ]
+  })
+}
+
+// 动画逻辑
+const animationTimers = ref([])
+
 onMounted(() => {
-  const chartInstance = echarts.init(realTimeChart.value)
+  // 系统指标动画
+  systemMetrics.value.forEach((metric, index) => {
+    const duration = 2000 
+    const startTime = Date.now()
+    
+    const animate = () => {
+      const progress = Math.min(1, (Date.now() - startTime) / duration)
+      metric.value = Math.floor(progress * metric.target)
+      
+      if (progress < 1) {
+        animationTimers.value[index] = requestAnimationFrame(animate)
+      }
+    }
+    
+    animationTimers.value[index] = requestAnimationFrame(animate)
+  })
+  
+  // 初始化网络流量图表
+  chartInstance = echarts.init(networkChart.value)
   const option = {
     tooltip: { trigger: 'axis' },
-    legend: { data: ['CPU', '内存', '磁盘'] },
+    legend: { data: ['发送数据', '接收数据'] },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: { type: 'category', data: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'] },
-    yAxis: { type: 'value' },
+    xAxis: { type: 'category', data: trafficData.times },
+    yAxis: { type: 'value', name: 'MB/s' },
     series: [
-      { name: 'CPU', type: 'line', data: [15, 22, 18, 25, 30, 28] },
-      { name: '内存', type: 'line', data: [45, 55, 60, 65, 70, 68] },
-      { name: '磁盘', type: 'line', data: [30, 35, 40, 45, 50, 48] }
+      { 
+        name: '发送数据', 
+        type: 'line', 
+        data: trafficData.sent,
+        smooth: true
+      },
+      { 
+        name: '接收数据', 
+        type: 'line', 
+        data: trafficData.received,
+        smooth: true
+      }
     ]
   }
   chartInstance.setOption(option)
-
-  timeInterval = setInterval(() => {
-    currentTime.value = formatTime(new Date())
-  }, 1000)
+  
+  // 启动数据更新
+  intervalId = setInterval(updateNetworkChart, 5000)
 })
 
 onBeforeUnmount(() => {
-  if (timeInterval) clearInterval(timeInterval)
+  if (intervalId) clearInterval(intervalId)
 })
 </script>
 
@@ -262,13 +337,9 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 
-.overview {
-  margin-bottom: 20px;
-}
-
 .status-card {
-  height: 140px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -276,6 +347,7 @@ onBeforeUnmount(() => {
 .metric-item {
   text-align: center;
 }
+
 
 /* 卡片标题样式 */
 .card-header {
@@ -296,10 +368,7 @@ onBeforeUnmount(() => {
 
 .chart {
   height: 350px;
-}
-
-.footer {
-  margin-top: 20px;
+  width: 100%;
 }
 
 .safety-tips {

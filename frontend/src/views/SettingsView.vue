@@ -1,7 +1,6 @@
 <template>
   <div class="full-container">
-    <h1>设置</h1>
-    <p>设置区域</p>
+    <h1>设置区域</h1>
   </div>
 </template>
 

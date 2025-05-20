@@ -1,7 +1,7 @@
 <template>
   <div class="full-container">
     <!-- 状态概览 -->
-    <el-row :gutter="20" class="overview">
+    <el-row :gutter="20">
       <el-col :span="6">
         <el-card class="status-card" style="background: #f0f9eb;"> 
           <div class="card-content">
@@ -53,7 +53,7 @@
       <el-col :span="12">
         <el-card>
           <div slot="header" style="text-align: left;">
-            <span>漏洞级别占比</span>
+            <span>告警级别占比</span>
           </div>
           <div ref="pieChart" class="chart"></div>
         </el-card>
@@ -74,23 +74,24 @@
       <el-col :span="24">
         <el-card>
           <div slot="header" class="card-header">
-            <span>最新检测结果</span>
+            <span>安全动态</span>
             <el-button type="text" style="float: right; padding: 3px 0" @click="openDrawer">更多</el-button>
           </div>
           <el-table :data="limitedRecentScans" border>
-            <el-table-column prop="time" label="检测时间" width="150" />
-            <el-table-column prop="status" label="状态">
+            <el-table-column prop="name" label="检测名称" />
+            <el-table-column prop="category" label="检测类别">
               <template #default="{ row }">
-                <el-tag :type="row.status === 'success' ? 'success' : row.status === 'warning' ? 'warning' : 'danger'">
-                  {{ row.status === 'success' ? '通过' : row.status === 'warning' ? '警告' : '失败' }}
+                <span>{{ row.category }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="level" label="等级">
+              <template #default="{ row }">
+                <el-tag :type="row.level === '高危' ? 'danger' : row.level === '中危' ? 'warning' : 'primary'">
+                  {{ row.level }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="action" label="操作">
-              <template #default="{ row }">
-                <el-button type="text" @click="viewDetails(row)">查看详情</el-button>
-              </template>
-            </el-table-column>
+            <el-table-column prop="time" label="检测时间" />
           </el-table>
         </el-card>
       </el-col>
@@ -104,19 +105,20 @@
       size="60%"
     >
       <el-table :data="paginatedData" border style="margin: 0 20px">
-        <el-table-column prop="time" label="检测时间" width="150" />
-        <el-table-column prop="status" label="状态">
+        <el-table-column prop="name" label="检测名称" />
+        <el-table-column prop="category" label="检测类别">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'success' ? 'success' : row.status === 'warning' ? 'warning' : 'danger'">
-              {{ row.status === 'success' ? '通过' : row.status === 'warning' ? '警告' : '失败' }}
+            <span>{{ row.category }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="level" label="等级">
+          <template #default="{ row }">
+            <el-tag :type="row.level === '高危' ? 'danger' : row.level === '中危' ? 'warning' : 'primary'">
+              {{ row.level }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="action" label="操作">
-          <template #default="{ row }">
-            <el-button type="text" @click="viewDetails(row)">查看详情</el-button>
-          </template>
-        </el-table-column>
+        <el-table-column prop="time" label="检测时间" />
       </el-table>
       
       <el-pagination
@@ -130,7 +132,7 @@
     </el-drawer>
 
     <!-- 底部信息 -->
-    <el-row class="footer">
+    <el-row>
       <el-col :span="24">
         <div class="safety-tips">
           <p>© 2025 Password By XiaoHei</p>
@@ -143,17 +145,18 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import * as echarts from 'echarts'
+import { ElMessageBox } from 'element-plus'
 
 // 模拟数据
 const recentScans = ref([
-  { time: '2023-09-15 14:30', status: 'success' },
-  { time: '2023-09-14 09:15', status: 'warning' },
-  { time: '2023-09-13 16:45', status: 'danger' },
-  { time: '2023-09-12 11:20', status: 'success' },
-  { time: '2023-09-11 15:50', status: 'warning' },
-  { time: '2023-09-10 10:00', status: 'danger' },
-  { time: '2023-09-09 14:30', status: 'success' },
-  { time: '2023-09-08 16:45', status: 'warning' }
+  { name: '检测事件1', category: '静态规则', level: '高危', time: '2023-09-15 14:30' },
+  { name: '动态检测2', category: '动态基线', level: '中危', time: '2023-09-14 09:15' },
+  { name: '安全扫描3', category: '静态规则', level: '低危', time: '2023-09-13 16:45' },
+  { name: '合规检查4', category: '动态基线', level: '低危', time: '2023-09-12 11:20' },
+  { name: '漏洞扫描5', category: '静态规则', level: '中危', time: '2023-09-11 15:50' },
+  { name: '配置审计6', category: '静态规则', level: '高危', time: '2023-09-10 10:00' },
+  { name: '权限检测7', category: '动态基线', level: '低危', time: '2023-09-09 14:30' },
+  { name: '日志分析8', category: '动态基线', level: '中危', time: '2023-09-08 16:45' }
 ])
 
 // 计算属性
@@ -189,7 +192,11 @@ const openDrawer = () => {
 
 // 操作方法
 const viewDetails = (row) => {
-  ElMessageBox.alert(`检测时间：${row.time}\n状态：${row.status}`, '检测详情', { type: 'info' })
+  ElMessageBox.alert(
+    `检测名称：${row.name}\n检测类别：${row.category}\n等级：${row.level}\n检测时间：${row.time}`, 
+    '检测详情', 
+    { type: 'info' }
+  )
 }
 
 // 图表初始化逻辑
@@ -271,10 +278,6 @@ onMounted(() => {
   gap: 20px;
 }
 
-.overview {
-  margin-bottom: 20px;
-}
-
 .status-card {
   height: 120px;
   display: flex;
@@ -288,8 +291,15 @@ onMounted(() => {
   gap: 17px;
 }
 
-.card-content .info p { margin: 0; color: #000000; margin-bottom: 20px;}
-.card-content h3 { margin: 0; font-size: 30px; }
+.card-content .info p { 
+  margin: 0; 
+  color: #000000; 
+  margin-bottom: 20px;
+}
+.card-content h3 { 
+  margin: 0; 
+  font-size: 30px; 
+}
 
 .main-content {
   display: flex;
@@ -299,10 +309,6 @@ onMounted(() => {
 
 .chart {
   height: 350px;
-}
-
-.footer {
-  margin-top: 20px;
 }
 
 .safety-tips {
