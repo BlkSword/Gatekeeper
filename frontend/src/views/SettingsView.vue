@@ -1,15 +1,15 @@
 <template>
-  <div class="full-container">
-    <h1>设置区域</h1>
+  <div class="settings-container">
+    <router-view />
   </div>
 </template>
 
+<script setup></script>
+
 <style scoped>
-.full-container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+.settings-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
 }
 </style>

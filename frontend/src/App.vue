@@ -1,3 +1,4 @@
+<!-- 布局组件 Layout.vue -->
 <template>
   <div class="common-layout">
     <el-container>
@@ -14,23 +15,31 @@
         <!-- 左侧菜单导航 -->
         <el-menu 
           :default-active="currentRoute"  
-          @select="handleMenuSelect"       
+          @select="handleMenuSelect"
+          unique-opened
         >
           <el-menu-item index="/">
             <el-icon><House /></el-icon>
             <span class="icon-text-gap"></span>
             首页
           </el-menu-item>
+          
           <el-menu-item index="/check">
             <el-icon><Aim /></el-icon>
             <span class="icon-text-gap"></span>
             检测
           </el-menu-item>
-          <el-menu-item index="/settings">
-            <el-icon><Setting /></el-icon>
-            <span class="icon-text-gap"></span>
-            设置
-          </el-menu-item>
+          
+          <el-sub-menu index="/settings" popper-append-to-body>
+            <template #title>
+              <el-icon><Setting /></el-icon>
+              <span class="icon-text-gap"></span>
+              设置
+            </template>
+            <el-menu-item index="/settings/account">账户设置</el-menu-item>
+            <el-menu-item index="/settings/password">密码修改</el-menu-item>
+            <el-menu-item index="/settings/alert">告警设置</el-menu-item>
+          </el-sub-menu>
         </el-menu>
       </el-aside>
 
@@ -44,6 +53,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { House, Aim, Setting } from '@element-plus/icons-vue'
 
 const router = useRouter();
 const route = useRoute();
@@ -153,6 +163,24 @@ const handleMenuSelect = (index) => {
 
 /* 菜单项悬停效果 */
 :deep(.el-menu-item:hover) {
+  background-color: #ecf5ff;
+  color: #409EFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* 子菜单标题样式 */
+:deep(.el-sub-menu__title) {
+  color: #000;
+  font-size: 16px;
+  padding: 0 20px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  margin: 10px 10px 0 10px;
+}
+
+/* 子菜单悬停效果 */
+:deep(.el-sub-menu__title:hover) {
   background-color: #ecf5ff;
   color: #409EFF;
   border-radius: 8px;

@@ -58,8 +58,8 @@
 
 <script setup>
 import { ref, shallowRef } from 'vue'
-import HomeBaseline from './Home_Baseline.vue'
-import HomeHost from './Home_Host.vue'
+import HomeBaseline from './Home/Home_Baseline.vue'
+import HomeHost from './Home/Home_Host.vue'
 
 const currentTab = ref('baseline')
 const currentComponent = shallowRef(HomeBaseline)
@@ -71,46 +71,4 @@ const switchTab = (tab) => {
 }
 </script>
 
-<style scoped>
-.container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.header {
-  padding: 20px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.content-container {
-  flex: 1;
-  padding: 20px;
-  height: calc(100vh - 120px); /* 根据实际header高度调整 */
-}
-
-.tab-buttons {
-  display: flex;
-  height: 32px;
-}
-
-.tab-buttons .el-button {
-  border: 1px solid #dcdfe6;
-  padding: 8px 15px;
-  transition: all 0.3s;
-}
-
-.tab-buttons .active {
-  background-color: #409EFF;
-  color: #ffffff;
-  border-color: #409EFF;
-  box-shadow: 0 2px 4px rgba(64, 158, 255, 0.2);
-}
-
-.admin-status {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-}
-</style>
+<style scoped src="../assets/css/HomeView.css"></style>

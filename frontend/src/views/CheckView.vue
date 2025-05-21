@@ -1,68 +1,116 @@
 <template>
   <div class="full-container">
     <!-- 页眉区域 -->
-    <header class="header">
-      <div class="button-group">
-        <button class="blue-button">基线配置</button>
-        <button class="blue-button">查看报告</button>
-        <button class="blue-button">自定义规则</button>
-      </div>
-    </header>
-
-    <!-- 主要内容区域 -->
-    <main class="main-content">
-      <!-- 安全评分区域 -->
-      <div class="score-card">
-        <div class="score-circle" ref="chartContainer">
-          <!-- 图表容器 -->
+    <el-scrollbar style="height: 100vh;">
+      <header class="header">
+        <div class="button-group">
+          <button class="blue-button" @click="showReportDialog = true">查看报告</button>
+          <button class="blue-button" @click="showRuleDialog = true">自定义规则</button>
         </div>
-        <div class="scan-info">
-          <p style="font-size: 1.5rem;">已完成安全扫描，已检测到 <span class="risk-highlight">{{ riskCount }}</span> 个风险</p>
-          <p style="color:dimgray">上次扫描时间：{{ lastScanTime }}</p>
-        </div>
-        <div style="margin-left: auto; align-self: center;">
-          <button class="scan-button" @click="startScan">立即扫描</button>
-        </div>
-      </div>
-
-      <!-- 风险列表 -->
-      <div class="risk-list">
-        <div class="risk-header">
-          <label>
-            <input type="checkbox" v-model="selectAll" @change="toggleAllSelection">
-            全选
-          </label>
-        </div>
-        <div 
-          v-for="(risk, index) in risks" 
-          :key="index" 
-          class="risk-item"
-        >
-          <div class="risk-checkbox">
-            <input type="checkbox" v-model="risk.selected">
+        <!-- 查看报告弹窗 -->
+        <div v-if="showReportDialog" class="custom-modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <span class="modal-title">查看报告</span>
+              <span class="modal-close" @click="showReportDialog = false">&times;</span>
+            </div>
+            <div class="modal-body">
+              <div class="svg-container"></div>
+              <p class="no-content">暂无内容</p>
+            </div>
           </div>
-          <div class="risk-details">
+        </div>
+        <!-- 自定义规则弹窗 -->
+        <div v-if="showRuleDialog" class="custom-modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <span class="modal-title">自定义规则</span>
+              <span class="modal-close" @click="showRuleDialog = false">&times;</span>
+            </div>
+            <div class="modal-body">
+              <div class="svg-container"></div>
+              <p class="no-content">暂无内容</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- 主要内容区域 -->
+      <main class="main-content">
+        <!-- 安全评分区域 -->
+        <div class="score-card">
+          <div class="score-circle" ref="chartContainer" style="margin-left: 3rem;"></div>
+          <div class="scan-info" style="margin-left: 3rem;">
+            <p style="font-size: 1.5rem;">已完成安全扫描，已检测到 <span class="risk-highlight">{{ riskCount }}</span> 个风险</p>
+            <p style="color:dimgray">上次扫描时间：{{ lastScanTime }}</p>
+          </div>
+          <div style="margin-right: 3rem; align-self: center;">
+            <span 
+              class="fix-link" 
+              @click="handleFixSelected"
+              :class="{ 'disabled': !hasSelected }"
+              v-show="selectedCount > 0"
+            >修复选中项</span>
+            <button class="scan-button" @click="startScan">立即扫描</button>
+          </div>
+        </div>
+
+        <!-- 风险列表 -->
+          <div class="risk-list">
             <div class="risk-header">
-              <span class="risk-level">{{ risk.level }}</span>
-              <span class="risk-title">{{ risk.title }}</span>
+              <label>
+                <input type="checkbox" v-model="selectAll" @change="toggleAllSelection">
+                <span class="cleckbox-label">全选</span>
+              </label>
             </div>
-            <div class="risk-description">
-              {{ risk.description }}
+            <div v-for="(risk, index) in risks" :key="index" class="risk-item">
+              <div class="risk-checkbox">
+                <input type="checkbox" v-model="risk.selected">
+              </div>
+              <div class="risk-details">
+                <div class="risk-header">
+                  <span class="risk-level" 
+                    :style="{
+                      backgroundColor: riskColors[risk.level]?.bg || '#f5f5f5',
+                      color: riskColors[risk.level]?.text || '#8c8c8c'
+                    }"
+                  >{{ risk.level }}</span>
+                  <span class="risk-title">{{ risk.title }}</span>
+                </div>
+              </div>
+              <div class="risk-actions">
+                <button class="risk-button" @click="handleAction(index, '修复')">修复</button>
+                <button class="risk-button" @click="handleAction(index, '忽略')">忽略</button>
+                <button class="risk-button" @click="handleAction(index, '详情')">详情</button>
+              </div>
             </div>
-            <div class="risk-actions">
-              <button 
-                v-for="action in risk.actions" 
-                :key="action" 
-                class="risk-button"
-                @click="handleAction(index, action)"
-              >
-                {{ action }}
-              </button>
+          </div>
+      </main>
+
+      <!-- 风险详情弹窗 -->
+      <div v-if="showDetails" class="details-modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <span class="modal-title">风险详情</span>
+            <span class="modal-close" @click="closeModal">&times;</span>
+          </div>
+          <div class="modal-body">
+            <div class="detail-section">
+              <label>风险描述</label>
+              <div class="detail-content">{{ selectedRisk.description }}</div>
+            </div>
+            <div class="detail-section">
+              <label>解决方案</label>
+              <div class="detail-content">{{ selectedRisk.solution }}</div>
+            </div>
+            <div class="detail-section">
+              <label>温馨提示</label>
+              <div class="detail-content">{{ selectedRisk.tip }}</div>
             </div>
           </div>
         </div>
       </div>
-    </main>
+    </el-scrollbar>
   </div>
 </template>
 
@@ -72,56 +120,79 @@ import * as echarts from 'echarts';
 export default {
   data() {
     return {
-      score: 50,
+      score: 66,
       riskCount: 13,
       lastScanTime: '2025-05-20 22:24:07',
       selectAll: false,
+      showReportDialog: false,    
+      showRuleDialog: false,     
       chartInstance: null,
+      riskColors: {
+        高危: { bg: '#fff0f0', text: '#ff4d4f' },    
+        中危: { bg: '#fff7e6', text: '#ffa940' },  
+        低危: { bg: '#edefd0', text: '#b8bf40' }      
+      },
+      showDetails: false,
+      selectedRisk: {},
       risks: [
         { 
           title: '检测是否开启系统防火墙', 
-          description: '检测到防火墙未正确配置', 
-          actions: ['修复', '忽略', '详情'], 
-          level: '中危',
+          level: '高危',
+          description: '系统未启用防火墙可能导致网络攻击风险',
+          solution: '请执行ufw enable命令启用防火墙',
+          tip: '建议定期检查防火墙规则有效性',
           selected: false 
         },
         { 
-          title: '检测是否使用安全的套接字层加密...', 
-          description: 'SSL/TLS协议版本过低', 
-          actions: ['修复', '忽略', '详情'], 
+          title: '检测是否使用安全的套接字层加密', 
           level: '中危',
+          description: '未使用SSL/TLS加密可能导致数据泄露',
+          solution: '配置服务器强制使用TLS 1.2及以上版本',
+          tip: '定期更新SSL证书',
           selected: false 
         },
         { 
           title: '检查是否设置无操作超时退出', 
-          description: '未设置会话超时时间', 
-          actions: ['修复', '忽略', '详情'], 
-          level: '中危',
+          level: '低危',
+          description: '会话超时设置过长可能导致安全风险',
+          solution: '建议设置超时时间为15分钟',
+          tip: '需结合业务需求调整',
           selected: false 
         },
         { 
           title: '是否限制核心转储', 
-          description: '核心转储文件未限制大小', 
-          actions: ['修复', '忽略', '详情'], 
           level: '中危',
+          description: '核心转储可能包含敏感信息',
+          solution: '通过ulimit -c 0禁用核心转储',
+          tip: '需确认应用程序调试需求',
           selected: false 
         },
         { 
           title: 'SSH 登录超时配置检测', 
-          description: 'SSH登录超时时间过长', 
-          actions: ['修复', '忽略', '详情'], 
-          level: '中危',
+          level: '高危',
+          description: 'SSH登录超时设置过长可能导致暴力破解',
+          solution: '在sshd_config中设置LoginGraceTime为60',
+          tip: '建议配合fail2ban使用',
           selected: false 
         },
         { 
           title: '检查SSH密码修改最小间隔', 
-          description: '密码修改间隔不符合安全策略', 
-          actions: ['修复', '忽略', '详情'], 
           level: '中危',
+          description: '密码修改间隔过短可能导致密码策略失效',
+          solution: '设置PASS_MIN_DAYS为7',
+          tip: '需结合企业安全策略',
           selected: false 
         }
       ]
     }
+  },
+  computed: {
+    selectedCount() {
+      return this.risks.filter(risk => risk.selected).length;
+    }
+  },
+  hasSelected() {
+    return this.selectedCount > 0;
   },
   mounted() {
     this.initChart();
@@ -137,22 +208,33 @@ export default {
     startScan() {
       console.log('开始新的安全扫描');
     },
+    handleFixSelected() {
+      if (this.selectedCount) {
+        this.risks
+          .filter(risk => risk.selected)
+          .forEach((risk, index) => {
+            this.handleAction(index, '修复');
+          });
+      }
+    },
     handleAction(riskIndex, action) {
-      console.log(`处理风险 ${riskIndex} 的操作：${action}`);
+      if (action === '详情') {
+        this.showDetails = true;
+        this.selectedRisk = this.risks[riskIndex];
+      } else {
+        console.log(`处理风险 ${riskIndex} 的操作：${action}`);
+      }
     },
     toggleAllSelection() {
       this.risks.forEach(risk => {
         risk.selected = this.selectAll;
       });
     },
-    // 初始化图表
     initChart() {
       const chartDom = this.$refs.chartContainer;
       this.chartInstance = echarts.init(chartDom);
       
-      // 动态颜色计算函数
       const getScoreColor = (score) => {
-        // 分数越高越绿，越低越红
         const r = Math.round(255 * (1 - score/100));
         const g = Math.round(255 * (score/100));
         return `rgb(${r},${g},0)`;
@@ -211,7 +293,6 @@ export default {
       
       this.chartInstance.setOption(option);
     },
-    // 颜色更新函数
     updateChartColor() {
       const option = this.chartInstance.getOption();
       const newColor = this.getScoreColor(this.score);
@@ -222,17 +303,18 @@ export default {
       
       this.chartInstance.setOption(option);
     },
-    // 动态颜色计算函数
     getScoreColor(score) {
       const r = Math.round(255 * (1 - score/100));
       const g = Math.round(255 * (score/100));
       return `rgb(${r},${g},0)`;
     },
-    // 窗口大小变化处理
     resizeHandler() {
       if (this.chartInstance) {
         this.chartInstance.resize();
       }
+    },
+    closeModal() {
+      this.showDetails = false;
     }
   },
   watch: {
@@ -245,180 +327,4 @@ export default {
 }
 </script>
 
-<style scoped>
-.full-container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: #f5f7fa;
-  box-sizing: border-box;
-}
-
-/* 页眉样式 */
-.header {
-  height: 60px;
-  padding: 0 2rem;
-  background-color: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  border-bottom: 1px solid #e4e7ed;
-}
-
-/* 按钮组样式 */
-.button-group {
-  display: flex;
-  gap: 1rem;
-}
-
-/* 按钮基础样式 */
-.blue-button {
-  background-color: #409EFF;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-/* 按钮悬停效果 */
-.blue-button:hover {
-  background-color: #367fd1;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-/* 主要内容区域 */
-.main-content {
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
-}
-
-/* 安全评分卡片 */
-.score-card {
-  display: flex;
-  gap: 1rem; 
-  margin-bottom: 2rem;
-  background: #ffffff;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-/* 评分圆环容器 */
-.score-circle {
-  flex: 0 0 200px; 
-  height: 200px;
-  position: relative;
-}
-
-/* 扫描信息 */
-.scan-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 1.7rem;
-}
-
-.scan-info p {
-  margin: 0;
-  font-size: 1rem;
-  color: #333;
-}
-
-.risk-highlight {
-  color: red;
-  font-weight: bold;
-}
-
-.scan-button {
-  background-color: #409EFF;
-  color: white;
-  padding: 0.6rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.scan-button:hover {
-  background-color: #367fd1;
-}
-
-/* 风险列表 */
-.risk-list {
-  background: #ffffff;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-.risk-header {
-  margin-bottom: 1rem;
-  font-weight: bold;
-  text-align: left;
-}
-
-.risk-item {
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid #e4e7ed;
-  padding: 1.2rem 0;
-}
-
-.risk-checkbox {
-  margin-right: 1rem;
-}
-
-.risk-details {
-  flex: 1;
-}
-
-.risk-level {
-  background: #f0f6ff;
-  color: #3399ff;
-  padding: 0.3rem 0.8rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  margin-right: 0.5rem;
-}
-
-.risk-title {
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #1a1a1a;
-}
-
-.risk-description {
-  color: #666;
-  font-size: 0.95rem;
-  margin: 0.5rem 0;
-}
-
-.risk-actions {
-  display: flex;
-  gap: 0.8rem;
-}
-
-.risk-button {
-  padding: 0.4rem 1rem;
-  border: 1px solid #409EFF;
-  border-radius: 4px;
-  background: none;
-  color: #409EFF;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-}
-
-.risk-button:hover {
-  background-color: #ecf5ff;
-}
-</style>
+<style scoped src="../assets/css/CheckView.css"></style>
