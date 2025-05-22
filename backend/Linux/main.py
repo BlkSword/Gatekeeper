@@ -11,6 +11,7 @@ from logging.handlers import RotatingFileHandler
 
 from fastapi import FastAPI, Request, Query ,Body
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from rules.rules_account import get_rules_account
 from rules.rules_authorized import get_rules_authorized
@@ -109,6 +110,14 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 修改中间件增加详细日志记录
 @app.middleware("http")
