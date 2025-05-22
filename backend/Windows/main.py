@@ -5,11 +5,13 @@ import time
 import logging
 import traceback
 import os
+import json
 
 
-from fastapi import FastAPI, Request, Query 
+from fastapi import FastAPI, Request, Query ,Body
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel  
+from fastapi.middleware.cors import CORSMiddleware
 
 from rules.rules_account import get_rules_account
 from rules.rules_log import get_rules_log
@@ -117,7 +119,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 修改中间件增加详细日志记录
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     start_time = time.time()
@@ -245,6 +255,49 @@ def rules(id: str = Query(..., description="规则ID参数，如rules_patch")):
     data = rule_func()
     insert_data_to_table(DB_Rules, id, data)
     return data
+
+
+
+##########################——————————————————其他接口——————————————————##########################
+
+@app.post("/login", tags=["Auth"])
+def get_login(credentials: dict = Body(...)):
+    username = credentials.get("username")
+    password = credentials.get("password")
+    
+    config_path = os.path.join(os.path.dirname(__file__), "database", "config.json")
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        correct_username = config.get("username")
+        correct_password = config.get("password")
+        
+        if not (correct_username and correct_password):
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "配置文件缺少username或password字段"}
+            )
+            
+        if username == correct_username and password == correct_password:
+            return JSONResponse(
+                status_code=200,
+                content={"token": "mock-token", "success": True}
+            )
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "用户名或密码错误"}
+        )
+    except FileNotFoundError:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "配置文件不存在"}
+        )
+    except json.JSONDecodeError:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "配置文件格式错误"}
+        )
+
 
 
 

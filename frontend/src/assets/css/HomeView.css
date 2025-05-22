@@ -39,3 +39,22 @@
     justify-content: flex-end;
     height: 100%;
 }
+
+.container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.el-scrollbar {
+    flex: 1;
+}
+
+.content-container {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+.logout-container {
+    text-align: right;
+}

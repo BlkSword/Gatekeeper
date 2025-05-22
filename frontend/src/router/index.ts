@@ -1,8 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '../stores/authStore'
+
 import HomeView from '../views/HomeView.vue'
 import CheckView from '../views/CheckView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import LoginView from '../views/LoginView.vue'
+import TestView from '../views/TestView.vue'
 
 import AccountSettings from '../views/Setting/AccountSettings.vue'
 import PasswordSettings from '../views/Setting/PasswordSettings.vue'
@@ -16,6 +19,10 @@ const routes = [
   },
   {
     path: '/',
+    redirect: '/home'
+  },
+  {
+    path: '/home',
     name: 'home',
     component: HomeView,
     meta: { requiresAuth: true }
@@ -25,6 +32,11 @@ const routes = [
     name: 'Check',
     component: CheckView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/test',
+    name: 'TestView',
+    component: TestView
   },
   {
     path: '/settings',
@@ -57,11 +69,10 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫
 router.beforeEach((to, _from, next) => {
+  const authStore = useAuthStore()
   if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('token')
-    if (!token) {
+    if (!authStore.token) {
       next({ path: '/login' })
     } else {
       next()

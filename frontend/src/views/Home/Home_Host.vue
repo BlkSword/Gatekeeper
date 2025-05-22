@@ -6,13 +6,8 @@
         <el-card class="status-card">
           <div class="metric-item">
             <h4>{{ metric.label }}</h4>
-            <el-progress 
-              type="circle" 
-              :percentage="metric.value" 
-              :color="metric.color" 
-              :stroke-width="16"
-              :width="120"
-            />
+            <el-progress type="circle" :percentage="metric.value" :color="metric.color" :stroke-width="16"
+              :width="120" />
           </div>
         </el-card>
       </el-col>
@@ -163,30 +158,10 @@ import * as echarts from 'echarts'
 
 // 系统状态指标
 const systemMetrics = ref([
-  {
-    label: '系统负载',
-    target: 75,    // 目标值
-    value: 0,      // 初始值设为0
-    color: '#67c23a'
-  },
-  {
-    label: 'CPU使用率',
-    target: 65,
-    value: 0,
-    color: '#f56c6c'
-  },
-  {
-    label: '内存使用率',
-    target: 72,
-    value: 0,
-    color: '#e69c17'
-  },
-  {
-    label: '磁盘使用率',
-    target: 88,
-    value: 0,
-    color: '#409eff'
-  }
+  { label: '系统负载', value: 0, target: 100, color: '#67c23a' },
+  { label: 'CPU使用率', value: 0, target: 100, color: '#f56c6c' },
+  { label: '内存使用率', value: 0, target: 100, color: '#e69c17' },
+  { label: '磁盘使用率', value: 0, target: 100, color: '#409eff' }
 ])
 
 // 网络接口信息
@@ -197,8 +172,8 @@ const networkInterfaces = ref([
 
 // 网络数据统计
 const networkStats = ref({
-  sent: 123456, // 发送数据量（MB）
-  received: 654321 // 接收数据量（MB）
+  sent: 123456,
+  received: 654321
 })
 
 // 开放端口
@@ -231,7 +206,6 @@ const installedApps = ref([
 // 网络流量监控图表
 const networkChart = ref(null)
 let chartInstance = null
-let intervalId = null
 
 // 模拟网络流量数据
 const trafficData = {
@@ -242,22 +216,20 @@ const trafficData = {
 
 function updateNetworkChart() {
   if (!chartInstance) return
-  
-  // 时间点
+
   const now = new Date()
   const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
   trafficData.times.push(timeStr)
-  
+
   if (trafficData.times.length > 10) {
     trafficData.times.shift()
     trafficData.sent.shift()
     trafficData.received.shift()
   }
-  
-  // 模拟新数据
+
   trafficData.sent.push(Math.floor(Math.random() * 300))
   trafficData.received.push(Math.floor(Math.random() * 300))
-  
+
   chartInstance.setOption({
     xAxis: { data: trafficData.times },
     series: [
@@ -267,27 +239,50 @@ function updateNetworkChart() {
   })
 }
 
+// 获取系统状态数据
+async function fetchSystemStatus() {
+  try {
+    const response = await fetch('http://localhost:8000/system_status')
+    if (!response.ok) throw new Error('请求失败')
+
+    const data = await response.json()
+
+    systemMetrics.value[0].value = parseFloat(data.system_load)
+    systemMetrics.value[1].value = parseFloat(data.cpu_usage)
+    systemMetrics.value[2].value = parseFloat(data.memory.percent)
+    systemMetrics.value[3].value = parseFloat(data.disk_total.percent)
+  } catch (error) {
+    console.error('获取系统状态失败:', error)
+  }
+}
+
 // 动画逻辑
 const animationTimers = ref([])
 
 onMounted(() => {
+  // 初始化获取数据
+  fetchSystemStatus()
+
+  // 启动定时器
+  const fetchInterval = setInterval(fetchSystemStatus, 5000)
+
   // 系统指标动画
   systemMetrics.value.forEach((metric, index) => {
-    const duration = 2000 
+    const duration = 2000
     const startTime = Date.now()
-    
+
     const animate = () => {
       const progress = Math.min(1, (Date.now() - startTime) / duration)
       metric.value = Math.floor(progress * metric.target)
-      
+
       if (progress < 1) {
         animationTimers.value[index] = requestAnimationFrame(animate)
       }
     }
-    
+
     animationTimers.value[index] = requestAnimationFrame(animate)
   })
-  
+
   // 初始化网络流量图表
   chartInstance = echarts.init(networkChart.value)
   const option = {
@@ -297,28 +292,30 @@ onMounted(() => {
     xAxis: { type: 'category', data: trafficData.times },
     yAxis: { type: 'value', name: 'MB/s' },
     series: [
-      { 
-        name: '发送数据', 
-        type: 'line', 
+      {
+        name: '发送数据',
+        type: 'line',
         data: trafficData.sent,
         smooth: true
       },
-      { 
-        name: '接收数据', 
-        type: 'line', 
+      {
+        name: '接收数据',
+        type: 'line',
         data: trafficData.received,
         smooth: true
       }
     ]
   }
   chartInstance.setOption(option)
-  
-  // 启动数据更新
-  intervalId = setInterval(updateNetworkChart, 5000)
-})
 
-onBeforeUnmount(() => {
-  if (intervalId) clearInterval(intervalId)
+  // 启动网络图表更新
+  const chartInterval = setInterval(updateNetworkChart, 5000)
+
+  // 清理函数
+  onBeforeUnmount(() => {
+    clearInterval(fetchInterval)
+    clearInterval(chartInterval)
+  })
 })
 </script>
 
