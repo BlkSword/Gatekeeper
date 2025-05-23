@@ -26,6 +26,7 @@ from system.system_status import check_system_status
 from system.system_network import get_network_status
 from system.system_process import get_process_info
 from system.system_running import get_running_processes
+from system.system_traffic import get_system_traffic
 
 from detect.detect_tactics import get_detect_tactics
 from detect.detect_start import get_detect_start
@@ -170,6 +171,12 @@ def system_status():
     data = check_system_status()
     insert_data_to_table(DB_PATH, "system_status", data)
     return data
+
+
+# 获取流量信息
+@app.get("/system_traffic", tags=["System"])
+def system_traffic():
+    return get_system_traffic()
 
 # 获取系统网络信息
 @app.get("/system_network", tags=["System"])

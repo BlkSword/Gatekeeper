@@ -1,10 +1,6 @@
 # 获取主机网络信息
-# 检测内容有：
-# 1. 获取网络接口信息，包括IP地址、子网掩码、网关等。
-# 2. 统计网络数据使用情况，包括发送和接收的字节数。
-# 3. 获取开放的网络端口及其状态。
-# 4. 检查防火墙规则，包括规则名称、协议、方向等。
-# 5. 获取网络服务配置，包括服务名称、PID、执行路径等。
+# 检测内容有：网络接口信息、数据统计、开放端口、防火墙规则、网络服务
+
 
 import socket
 import psutil
@@ -16,7 +12,7 @@ logger = logging.getLogger(__name__)
 def get_network_status():
     """获取网络状态信息"""
     
-    # 新增获取网关信息函数
+    # 获取网关信息函数
     def get_gateways():
         try:
             result = subprocess.check_output('route print 0.0.0.0', shell=True, encoding='gbk')
@@ -74,19 +70,23 @@ def get_network_status():
             logger.error(f"Failed to get firewall rules: {str(e)}")
             return {"error": str(e)}
 
-    # 获取网络服务配置
+    # 获取使用网络服务
     def get_network_services():
         try:
             services = []
-            for proc in psutil.process_iter(['pid', 'name', 'connections']):
-                if proc.info['connections']:
+            for proc in psutil.process_iter(['pid', 'name', 'exe']):
+                try:
                     connections = proc.connections()
-                    services.append({
-                        "name": proc.info['name'],
-                        "pid": proc.info['pid'],
-                        "exe_path": proc.exe(),
-                        "protocols": list({conn.type.name for conn in connections if conn.type})
-                    })
+                    if connections:
+                        protocols = list({conn.type.name for conn in connections if conn.type})
+                        services.append({
+                            "name": proc.info['name'],
+                            "pid": proc.info['pid'],
+                            "exe_path": proc.info['exe'],
+                            "protocols": protocols
+                        })
+                except psutil.AccessDenied:
+                    continue  
             return services
         except Exception as e:
             return {"error": str(e)}
@@ -96,7 +96,7 @@ def get_network_status():
             name: {
                 "ip_address": [addr.address for addr in addrs if addr.family == socket.AF_INET],
                 "netmask": [addr.netmask for addr in addrs if addr.family == socket.AF_INET],
-                "gateways": get_gateways()  # 新增网关信息
+                "gateways": get_gateways()  
             }
             for name, addrs in psutil.net_if_addrs().items()
         },
@@ -107,12 +107,4 @@ def get_network_status():
         "open_ports": get_open_ports(),
         "firewall_rules": get_firewall_rules(),
         "network_services": get_network_services(),
-        "dns_servers": [
-            dns[-1][0] for dns in socket.getaddrinfo(
-                socket.gethostname(), 
-                None, 
-                proto=socket.IPPROTO_UDP,
-                type=socket.SOCK_DGRAM
-            )
-        ]
     }

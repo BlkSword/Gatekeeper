@@ -26,6 +26,7 @@ from system.system_status import check_internet
 from system.system_network import get_network_status
 from system.system_process import get_process_info
 from system.system_running import get_running_processes
+from system.system_traffic import get_system_traffic
 
 from detect.detect_account import get_detect_account
 from detect.detect_file import get_detect_file
@@ -156,6 +157,11 @@ async def add_process_time_header(request: Request, call_next):
 def health_check():
     return get_health_check()
 
+# 获取流量信息
+@app.get("/system_traffic", tags=["System"])
+def system_traffic():
+    return get_system_traffic()
+
 # 获取系统使用情况
 @app.get("/system_status", tags=["System"])
 def system_status():
@@ -174,7 +180,7 @@ def system_network():
 # 获取服务与进程信息
 @app.get("/system_process", tags=["System"])
 def system_process():
-    data = get_process_info()  # 获取原始数据
+    data = get_process_info()  
     insert_data_to_table(DB_PATH, "system_process", data)
     return data
 

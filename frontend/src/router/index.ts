@@ -5,7 +5,6 @@ import HomeView from '../views/HomeView.vue'
 import CheckView from '../views/CheckView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import LoginView from '../views/LoginView.vue'
-import TestView from '../views/TestView.vue'
 
 import AccountSettings from '../views/Setting/AccountSettings.vue'
 import PasswordSettings from '../views/Setting/PasswordSettings.vue'
@@ -32,11 +31,6 @@ const routes = [
     name: 'Check',
     component: CheckView,
     meta: { requiresAuth: true }
-  },
-  {
-    path: '/test',
-    name: 'TestView',
-    component: TestView
   },
   {
     path: '/settings',
