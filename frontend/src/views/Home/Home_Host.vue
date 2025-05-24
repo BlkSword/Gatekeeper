@@ -53,15 +53,22 @@
       <el-col :span="24">
         <el-card>
           <div slot="header" class="card-header">
-            <span>网络进程信息</span>
-            <el-button type="text" style="float: right; padding: 3px 0"
-              @click="openDrawer('processInfo')">更多</el-button>
+            <span>进程信息</span>
+            <el-button type="text" style="float: right; padding: 3px 0" @click="openDrawer('process')">更多</el-button>
           </div>
-          <el-table :data="processes" border>
-            <el-table-column prop="name" label="进程名称" />
+          <el-table :data="processesSlice" border>
+            <!-- PID列 -->
             <el-table-column prop="pid" label="PID" />
+            <el-table-column prop="name" label="进程名称" />
+            <el-table-column prop="status" label="运行状态">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 'running' ? 'success' : 'danger'">
+                  {{ row.status === 'running' ? '运行中' : '已停止' }}
+                </el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="cpu" label="CPU%" />
-            <el-table-column prop="memory" label="内存%" />
+            <el-table-column prop="memory" label="内存(MB)" />
             <el-table-column prop="path" label="路径" />
             <el-table-column prop="user" label="启动用户" />
             <el-table-column prop="permission" label="权限等级">
@@ -76,6 +83,7 @@
       </el-col>
     </el-row>
 
+
     <!-- 服务与网络信息 -->
     <el-row :gutter="20">
       <el-col :span="24">
@@ -84,8 +92,8 @@
             <span>服务状态</span>
             <el-button type="text" style="float: right; padding: 3px 0" @click="openDrawer('service')">更多</el-button>
           </div>
-          <el-table :data="services" border>
-            <el-table-column prop="name" label="服务名称" />
+          <el-table :data="servicesSlice" border>
+            <el-table-column prop="display_name" label="服务名称" />
             <el-table-column prop="status" label="状态">
               <template #default="{ row }">
                 <el-tag :type="row.status === 'running' ? 'success' : 'warning'">
@@ -93,7 +101,6 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="pid" label="PID" />
             <el-table-column prop="path" label="执行路径" />
           </el-table>
         </el-card>
@@ -149,7 +156,7 @@
       </el-col>
     </el-row>
 
-    <!-- 安装程序与网络数据 -->
+    <!-- 安装程序 -->
     <el-row :gutter="20">
       <el-col :span="12">
         <el-card>
@@ -157,13 +164,14 @@
             <span>已安装程序</span>
             <el-button type="text" style="float: right; padding: 3px 0" @click="openDrawer('app')">更多</el-button>
           </div>
-          <el-table :data="installedApps" border>
+          <el-table :data="installedAppsSlice" border>
             <el-table-column prop="name" label="程序名称" />
             <el-table-column prop="version" label="版本" />
             <el-table-column prop="installDate" label="安装日期" />
           </el-table>
         </el-card>
       </el-col>
+      <!-- 网络数据统计 -->
       <el-col :span="12">
         <el-card>
           <div slot="header" class="card-header">
@@ -229,7 +237,7 @@
     <!-- 服务信息抽屉 -->
     <el-drawer v-model="drawers.service.visible" title="服务状态" direction="rtl" size="50%">
       <el-table :data="serviceTableData" border style="margin: 20px;">
-        <el-table-column prop="name" label="服务名称" />
+        <el-table-column prop="display_name" label="服务名称" />
         <el-table-column prop="status" label="状态">
           <template #default="{ row }">
             <el-tag :type="row.status === 'running' ? 'success' : 'warning'">
@@ -237,7 +245,6 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="pid" label="PID" />
         <el-table-column prop="path" label="执行路径" />
       </el-table>
       <el-pagination layout="prev, pager, next" :total="services.length" :page-size="drawers.service.pageSize"
@@ -248,7 +255,7 @@
     <!-- 网络服务信息抽屉 -->
     <el-drawer v-model="drawers.networkService.visible" title="网络服务信息" direction="rtl" size="50%">
       <el-table :data="networkServiceTableData" border style="margin: 20px;">
-        <el-table-column prop="name" label="进程名称" />
+        <el-table-column prop="name" label="服务名称" />
         <el-table-column prop="pid" label="PID" />
         <el-table-column prop="exe_path" label="执行路径" />
         <el-table-column label="协议类型">
@@ -349,34 +356,23 @@ const networkStats = ref({
 // 防火墙规则
 const firewallRules = ref([])
 
-// 进程服务信息
+// 服务信息
 const processInfo = ref([])
 
 // 开放端口
 const openPorts = ref([])
 
 // 进程信息
-const processes = ref([
-  { name: 'System Idle Process', pid: '0', cpu: '0.5', memory: '0.1', path: 'System', user: 'SYSTEM', permission: '管理员' },
-  { name: 'chrome.exe', pid: '1234', cpu: '15.2', memory: '25.3', path: 'C:\\Program Files\\Google\\Chrome', user: 'XiaoHei', permission: '用户' }
-])
+const processes = ref([])
+
 
 // 服务信息
-const services = ref([
-  { name: 'Windows Update', status: 'running', pid: '456', path: 'C:\\Windows\\system32\\svchost.exe' },
-  { name: 'Print Spooler', status: 'stopped', pid: '-', path: '-' }
-])
+const services = ref([])
 
 
-const firewallRulesSlice = computed(() => {
-  return firewallRules.value.slice(0, 3)
-})
 
 // 已安装程序
-const installedApps = ref([
-  { name: 'Google Chrome', version: '120.0.6099.71', installDate: '2023-05-15' },
-  { name: 'Visual Studio Code', version: '1.75.1', installDate: '2023-04-01' }
-])
+const installedApps = ref([])
 
 // 抽屉配置
 const drawers = ref({
@@ -486,8 +482,26 @@ const networkServiceTableData = computed(() => {
   return processInfo.value.slice(start, start + drawers.value.processInfo.pageSize)
 })
 
+
+
 const processInfoSlice = computed(() => {
   return processInfo.value.slice(0, 3)
+})
+
+const servicesSlice = computed(() => {
+  return services.value.slice(0, 3)
+})
+
+const installedAppsSlice = computed(() => {
+  return installedApps.value.slice(0, 5)
+})
+
+const firewallRulesSlice = computed(() => {
+  return firewallRules.value.slice(0, 3)
+})
+
+const processesSlice = computed(() => {
+  return processes.value.slice(0, 3)
 })
 
 
@@ -662,7 +676,52 @@ async function fetchNetworkData() {
   }
 }
 
+// 获取系统服务数据
+async function fetchSystemServices() {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/system_process')
+    if (!response.ok) throw new Error('系统服务数据请求失败')
+    const data = await response.json()
 
+    // 处理服务数据
+    services.value = data.critical_services.map(service => ({
+      display_name: service.display_name,
+      status: service.state === '运行中' ? 'running' : 'stopped',
+      path: service.executable_path || '-'
+    }))
+
+    // 处理已安装程序数据
+    installedApps.value = data.installed_programs.map(app => ({
+      name: app.name,
+      version: app.version,
+      installDate: app.install_date || 'N/A'
+    }))
+  } catch (error) {
+    console.error('获取系统服务数据失败:', error)
+  }
+}
+
+async function fetchSystemProcess() {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/system_running');
+    if (!response.ok) throw new Error('系统运行数据请求失败');
+    const data = await response.json();
+
+    // 处理进程数据（applications）
+    processes.value = data.applications.map(app => ({
+      pid: app.pid,
+      name: app.name,
+      status: app.status,
+      cpu: parseFloat(app.cpu_usage), // 提取 CPU 使用率数值
+      memory: parseFloat(app.memory_mb), // 提取内存使用数值（MB）
+      path: app.exe_path || '-',
+      user: app.user || 'N/A',
+      permission: app.privilege_level || '未知'
+    }));
+  } catch (error) {
+    console.error('获取系统运行数据失败:', error);
+  }
+}
 
 
 // 动画逻辑
@@ -688,11 +747,16 @@ onMounted(() => {
   // 初始化获取数据
   fetchSystemStatus()
   fetchNetworkData()
+  fetchSystemServices()
+  fetchSystemProcess()
 
   // 启动定时器
   const fetchInterval = setInterval(fetchSystemStatus, 5000)
-
   const networkInterval = setInterval(fetchNetworkData, 10000)
+  const processInterval = setInterval(fetchSystemServices, 30000)
+  const processInterval1 = setInterval(fetchSystemProcess, 30000)
+
+
 
   // 启动初始动画
   systemMetrics.value.forEach((_, index) => {
@@ -745,6 +809,8 @@ onMounted(() => {
     clearInterval(fetchInterval)
     clearInterval(chartInterval)
     clearInterval(networkInterval)
+    clearInterval(processInterval)
+    clearInterval(processInterval1)
     animationTimers.value.forEach(timer => cancelAnimationFrame(timer))
     if (chartInstance) {
       chartInstance.dispose()
