@@ -1,16 +1,10 @@
 # 服务相关检测
 
-import platform
 import subprocess
 import re
-import socket
 import winreg  # 用于注册表操作
 
 def get_rules_service():
-    # 获取基础信息
-    hostname = platform.node()
-    domain = socket.getfqdn().split('.', 1)[1] if '.' in socket.getfqdn() else "N/A"
-
     # 检测不必要服务（TELNET、RemoteRegistry、SMTP等）
     def check_unnecessary_services():
         target_services = ["TELNET", "RemoteRegistry", "SMTP"]  # 目标检测服务列表
@@ -69,8 +63,6 @@ def get_rules_service():
             return {"error": str(e)}
 
     config_data = {
-        "hostname": hostname,
-        "domain": domain,
         "security_policy": check_security_policy()
     }
     

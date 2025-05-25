@@ -3,18 +3,11 @@
 # DLL 劫持风险检测（无用户组对系统 DLL 有写权限​）、受控文件夹访问
 
 
-import platform
 import subprocess
 import re
-import socket
-import os
 import winreg  # 用于注册表操作
 
 def get_rules_other():
-    # 获取基础信息
-    hostname = platform.node()
-    domain = socket.getfqdn().split('.', 1)[1] if '.' in socket.getfqdn() else "N/A"
-
     # 屏幕保护程序启用及密码保护检测
     def check_screensaver():
         try:
@@ -116,8 +109,6 @@ def get_rules_other():
             return {"error": str(e)}
 
     config_data = {
-        "hostname": hostname,
-        "domain": domain,
         "security_policy": check_security_policy()
     }
     

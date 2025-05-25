@@ -3,13 +3,8 @@
 
 import subprocess
 import re
-import platform
-import socket
 
 def get_rules_permissions():
-    # 获取基础信息
-    hostname = platform.node()
-    domain = socket.getfqdn().split('.', 1)[1] if '.' in socket.getfqdn() else "N/A"
 
     # 可远程访问的注册表路径检测
     def check_remote_registry():
@@ -57,8 +52,6 @@ def get_rules_permissions():
 
     # 整合所有检测结果
     config_data = {
-        "hostname": hostname,
-        "domain": domain,
         "permissions_check": {
             "remote_registry_paths": check_remote_registry(),
             "remote_shutdown_privilege": check_remote_shutdown_privilege(),

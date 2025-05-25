@@ -1,16 +1,10 @@
 # 文件系统检测
 # 检测内容有：磁盘格式、默认共享
 
-import platform
 import subprocess
 import re
-import socket
 
 def get_rules_file():
-    # 获取基础信息
-    hostname = platform.node()
-    domain = socket.getfqdn().split('.', 1)[1] if '.' in socket.getfqdn() else "N/A"
-
     # 磁盘格式检测（NTFS）
     def check_disk_format():
         try:
@@ -31,7 +25,9 @@ def get_rules_file():
             non_ntfs_disks = [d for d in disks if d["文件系统"] != "NTFS" and d["磁盘"] in ['C:', 'D:', 'E:', 'F:']]
             
             return {
-                "实际值": {
+                "序号": 8,
+                "检测名称": "磁盘格式检测（NTFS）",
+                "检测结果": {
                     "NTFS磁盘": [d["磁盘"] for d in ntfs_disks],
                     "非NTFS磁盘": [d["磁盘"] for d in non_ntfs_disks]
                 },
@@ -50,7 +46,9 @@ def get_rules_file():
             default_shares = re.findall(r'(\w+\$)\s+', share_output)
             
             return {
-                "实际值": default_shares,
+                "序号": 9,
+                "检测名称": "默认共享检测（C$、ADMIN$等）",
+                "检测结果": default_shares,
                 "基线标准": "应禁用C$、D$、ADMIN$等默认共享",
                 "是否符合": "符合" if not default_shares else "不符合"
             }
@@ -61,15 +59,13 @@ def get_rules_file():
     def check_security_policy():
         try:
             return {
-                "disk_format": check_disk_format(),
-                "default_shares": check_default_shares()
+                "磁盘格式检测（NTFS）": check_disk_format(),
+                "默认共享检测（C$、ADMIN$等）": check_default_shares()
             }
         except Exception as e:
             return {"error": str(e)}
 
     config_data = {
-        "hostname": hostname,
-        "domain": domain,
         "security_policy": check_security_policy()
     }
     

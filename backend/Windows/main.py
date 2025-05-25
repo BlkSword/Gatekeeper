@@ -12,6 +12,10 @@ from fastapi import FastAPI, Request, Query ,Body
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel  
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional, Dict, Any
+from logging.handlers import RotatingFileHandler
+
+
 
 from rules.rules_account import get_rules_account
 from rules.rules_log import get_rules_log
@@ -35,8 +39,13 @@ from detect.detect_update import get_detect_update
 
 from other.health_check import get_health_check
 
-from logging.handlers import RotatingFileHandler
 
+class QueryRequest(BaseModel):
+    db_type: str  
+    table_name: str
+    where: Optional[Dict[str, Any]] = None
+    limit: Optional[int] = 100
+    offset: Optional[int] = 0
 
 
 DB_PATH = './database/system.db'
@@ -106,6 +115,35 @@ def insert_data_to_table(db_path: str, table_name: str, data: any):
     except Exception as e:
         logger.error(f"{table_name}数据库插入失败: {str(e)}\n{traceback.format_exc()}")
 
+# 查询函数
+def query_data_from_table(db_path: str, table_name: str, where: dict = None):
+    """
+    通用数据库查询函数，支持WHERE条件过滤
+    """
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # 构建查询语句
+        query = f"SELECT * FROM {table_name}"
+        if where:
+            where_clause = " AND ".join([f"{k} = ?" for k in where.keys()])
+            query += f" WHERE {where_clause}"
+        cursor.execute(query, tuple(where.values()) if where else ())
+
+        columns = [desc[0] for desc in cursor.description]
+        rows = cursor.fetchall()
+
+        return {
+            "columns": columns,
+            "data": rows
+        }
+
+    except Exception as e:
+        logger.error(f"查询 {table_name} 失败: {str(e)}\n{traceback.format_exc()}")
+        return {"error": str(e)}
+    finally:
+        conn.close()
 
 # 配置日志系统
 log_handler = RotatingFileHandler(
@@ -188,7 +226,7 @@ def system_network():
 # 获取服务与进程信息
 @app.get("/system_process", tags=["System"])
 def system_process():
-    data = get_process_info()  # 获取原始数据
+    data = get_process_info()  
     insert_data_to_table(DB_PATH, "system_process", data)
     return data
 
@@ -306,6 +344,33 @@ def get_login(credentials: dict = Body(...)):
         )
 
 
+
+# 数据库查询接口
+@app.post("/query", tags=["Database"])
+def database_query(request: QueryRequest):
+    """
+    通用数据库查询接口
+    """
+    # 映射db_type到实际路径
+    db_path_map = {
+        "system": DB_PATH,
+        "detect": DB_DO,
+        "rules": DB_Rules
+    }
+
+    db_path = db_path_map.get(request.db_type)
+    if not db_path:
+        return JSONResponse(status_code=400, content={"detail": "无效的db_type，可选值：system, detect, rules"})
+
+    result = query_data_from_table(
+        db_path=db_path,
+        table_name=request.table_name,
+        where=request.where
+    )
+
+    if "error" in result:
+        return JSONResponse(status_code=500, content={"detail": result["error"]})
+    return result
 
 
 

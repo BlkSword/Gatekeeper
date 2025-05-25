@@ -2,18 +2,11 @@
 # 检测内容：Windows防火墙启用检测、SYN攻击保护检测（基于注册表）、远程桌面端口修改检测（基于注册表）
 
 
-import platform
 import subprocess
 import re
-import socket
-import os
 import winreg  # 用于注册表操作
 
 def get_rules_protocols():
-    # 获取基础信息
-    hostname = platform.node()
-    domain = socket.getfqdn().split('.', 1)[1] if '.' in socket.getfqdn() else "N/A"
-
     # Windows防火墙启用检测
     def check_firewall_status():
         try:
@@ -82,8 +75,6 @@ def get_rules_protocols():
             return {"error": str(e)}
 
     config_data = {
-        "hostname": hostname,
-        "domain": domain,
         "security_policy": check_security_policy()
     }
     
