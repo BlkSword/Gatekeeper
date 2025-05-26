@@ -1,4 +1,4 @@
-# uvicorn main:app --reload 
+# uvicorn main:app --reload
 
 import sqlite3
 import time
@@ -6,61 +6,48 @@ import logging
 import traceback
 import os
 import json
+import uuid
 
 
 from fastapi import FastAPI, Request, Query ,Body
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel  
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import BackgroundTasks, HTTPException
+
+from pydantic import BaseModel  
 from typing import Optional, Dict, Any
 from logging.handlers import RotatingFileHandler
 
+from database import init_db
+from models import Rule, Task, TaskResult
+from schemas import RuleCreate, RuleUpdate
+from rules_executor import run_security_checks
 
-
-from rules.rules_account import get_rules_account
-from rules.rules_log import get_rules_log
-from rules.rules_permissions import get_rules_permissions
-from rules.rules_protocols import get_rules_protocols
-from rules.rules_service import get_rules_service
-from rules.rules_file import get_rules_file
-from rules.rules_patch import get_rules_patch
-from rules.rules_other import get_rules_other
-
+# 系统模块导入
 from system.system_status import check_system_status
 from system.system_network import get_network_status
 from system.system_process import get_process_info
 from system.system_running import get_running_processes
 from system.system_traffic import get_system_traffic
 
+# 检测模块导入
 from detect.detect_tactics import get_detect_tactics
 from detect.detect_start import get_detect_start
 from detect.detect_telnet import get_detect_telnet
 from detect.detect_update import get_detect_update
 
+# 其他模块导入
 from other.health_check import get_health_check
 
 
 class QueryRequest(BaseModel):
-    db_type: str  
+    db_type: str
     table_name: str
     where: Optional[Dict[str, Any]] = None
-    limit: Optional[int] = 100
-    offset: Optional[int] = 0
-
-
-DB_PATH = './database/system.db'
-os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-DB_DO = './database/detect.db'
-os.makedirs(os.path.dirname(DB_DO), exist_ok=True)
-DB_Rules = './database/rules.db'
-os.makedirs(os.path.dirname(DB_Rules), exist_ok=True)
-
 
 app = FastAPI()
 
-
-# 创建系统状态数据表
-# 通用表创建函数
+# 规则相关表创建
 def create_table(db_path: str, table_name: str):
     """通用创建数据库表函数"""
     conn = sqlite3.connect(db_path)
@@ -75,35 +62,10 @@ def create_table(db_path: str, table_name: str):
     conn.commit()
     conn.close()
 
-## 应用启动时初始化数据库表
-# 系统相关表
-create_table(DB_PATH, "system_status")
-create_table(DB_PATH, "system_information")
-create_table(DB_PATH, "system_network")
-create_table(DB_PATH, "system_process")
-create_table(DB_PATH, "system_running")
-
-# 检测相关表
-create_table(DB_DO, "detect_tactics")
-create_table(DB_DO, "detect_start")
-create_table(DB_DO, "detect_telnet")
-create_table(DB_DO, "detect_update")
-
-# 规则相关表
-create_table(DB_Rules, "rules_account")
-create_table(DB_Rules, "rules_log")
-create_table(DB_Rules, "rules_permissions")
-create_table(DB_Rules, "rules_protocols")
-create_table(DB_Rules, "rules_service")
-create_table(DB_Rules, "rules_file")
-create_table(DB_Rules, "rules_patch")
-create_table(DB_Rules, "rules_other")
-
 
 request_stats = {"total_requests": 0, "avg_response_time": 0.0}
 
-
-# 提取通用数据库插入函数
+# 保留规则层数据库插入函数
 def insert_data_to_table(db_path: str, table_name: str, data: any):
     """通用数据库数据插入函数"""
     try:
@@ -117,40 +79,25 @@ def insert_data_to_table(db_path: str, table_name: str, data: any):
 
 # 查询函数
 def query_data_from_table(db_path: str, table_name: str, where: dict = None):
-    """
-    通用数据库查询函数，支持WHERE条件过滤
-    """
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-
-        # 构建查询语句
         query = f"SELECT * FROM {table_name}"
         if where:
             where_clause = " AND ".join([f"{k} = ?" for k in where.keys()])
             query += f" WHERE {where_clause}"
         cursor.execute(query, tuple(where.values()) if where else ())
-
         columns = [desc[0] for desc in cursor.description]
         rows = cursor.fetchall()
-
-        return {
-            "columns": columns,
-            "data": rows
-        }
-
+        return {"columns": columns, "data": rows}
     except Exception as e:
         logger.error(f"查询 {table_name} 失败: {str(e)}\n{traceback.format_exc()}")
         return {"error": str(e)}
     finally:
         conn.close()
 
-# 配置日志系统
-log_handler = RotatingFileHandler(
-    './app.log',
-    maxBytes=1024*1024*5,  
-    backupCount=3
-)
+# 日志配置
+log_handler = RotatingFileHandler('./app.log', maxBytes=1024*1024*5, backupCount=3)
 logging.basicConfig(
     handlers=[log_handler],
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -158,7 +105,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
+# 中间件配置
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -167,6 +114,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 初始化数据库
+@app.on_event("startup")
+async def startup_event():
+    await init_db()
+
+# 请求统计中间件
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     start_time = time.time()
@@ -174,27 +127,21 @@ async def add_process_time_header(request: Request, call_next):
         response = await call_next(request)
         process_time = time.time() - start_time
         
-        # 记录请求日志
         logger.info(
-            f"Request: {request.method} {request.url} | " 
+            f"Request: {request.method} {request.url} | "
             f"Status: {response.status_code} | "
             f"Process Time: {process_time:.4f}s"
         )
         
         request_stats["total_requests"] += 1
         request_stats["avg_response_time"] = (
-            (request_stats["avg_response_time"] * (request_stats["total_requests"] - 1) + process_time) 
+            (request_stats["avg_response_time"] * (request_stats["total_requests"] - 1) + process_time)
             / request_stats["total_requests"]
         )
         return response
     except Exception as e:
         logger.error(f"Request failed: {str(e)}\n{traceback.format_exc()}")
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "Internal Server Error"}
-        )
-
-
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 ##########################——————————————————主机检测层——————————————————##########################
 
@@ -206,10 +153,7 @@ def health_check():
 # 获取系统使用情况
 @app.get("/system_status", tags=["System"])
 def system_status():
-    data = check_system_status()
-    insert_data_to_table(DB_PATH, "system_status", data)
-    return data
-
+    return check_system_status()
 
 # 获取流量信息
 @app.get("/system_traffic", tags=["System"])
@@ -219,89 +163,96 @@ def system_traffic():
 # 获取系统网络信息
 @app.get("/system_network", tags=["System"])
 def system_network():
-    data = get_network_status()
-    insert_data_to_table(DB_PATH, "system_network", data)
-    return data
+    return get_network_status()
 
 # 获取服务与进程信息
 @app.get("/system_process", tags=["System"])
 def system_process():
-    data = get_process_info()  
-    insert_data_to_table(DB_PATH, "system_process", data)
-    return data
+    return get_process_info()
 
 # 获取正在运行的进程信息
 @app.get("/system_running", tags=["System"])
 def system_running():
-    data = get_running_processes()
-    insert_data_to_table(DB_PATH, "system_running", data)
-    return data
-
+    return get_running_processes()
 
 ##########################——————————————————实时检测层——————————————————##########################
-
 
 # 策略监控层
 @app.get("/detect_tactics", tags=["Detect"])
 def detect_tactics():
-    data = get_detect_tactics()
-    insert_data_to_table(DB_DO, "detect_tactics", data)
-    return data
+    return get_detect_tactics()
 
 # 服务启动检测
 @app.get("/detect_start", tags=["Detect"])
 def detect_start():
-    data = get_detect_start()
-    insert_data_to_table(DB_DO, "detect_start", data)
-    return data
+    return get_detect_start()
 
 # 网络配置检测
 @app.get("/detect_telnet", tags=["Detect"])
 def detect_telnet():
-    data = get_detect_telnet()
-    insert_data_to_table(DB_DO, "detect_telnet", data)
-    return data
+    return get_detect_telnet()
 
 # 更新检测
 @app.get("/detect_update", tags=["Detect"])
 def detect_update():
-    data = get_detect_update()
-    insert_data_to_table(DB_DO, "detect_update", data)
-    return data
-
-
+    return get_detect_update()
 
 ##########################——————————————————规则检测层——————————————————##########################
 
-# 函数映射字典
-rule_functions = {
-    "rules_account": get_rules_account,
-    "rules_log": get_rules_log,
-    "rules_permissions": get_rules_permissions,
-    "rules_protocols": get_rules_protocols,
-    "rules_service": get_rules_service,
-    "rules_file": get_rules_file,
-    "rules_patch": get_rules_patch,
-    "rules_other": get_rules_other
-}
-
-
+# 创建规则接口
 @app.post("/rules", tags=["Rules"])
-def rules(id: str = Query(..., description="规则ID参数，如rules_patch")):  
-    # 根据ID获取对应的检测函数
-    rule_func = rule_functions.get(id)
-    
-    if not rule_func:
-        return JSONResponse(
-            status_code=400,
-            content={"detail": f"无效的规则ID: {id}，可选值：{list(rule_functions.keys())}"}
-        )
-    
-    data = rule_func()
-    insert_data_to_table(DB_Rules, id, data)
-    return data
+async def create_rule(rule: RuleCreate):
+    """创建新的检测规则"""
+    db_rule = await Rule.create(**rule.dict())
+    return db_rule
 
+# 获取所有规则接口
+@app.get("/rules", tags=["Rules"])
+async def get_all_rules():
+    """获取所有已配置的检测规则"""
+    return await Rule.all()
 
+# 启动检测任务接口
+@app.post("/scan", tags=["Rules"])
+async def start_scan(background_tasks: BackgroundTasks):
+    """启动异步安全检测任务"""
+    task_id = str(uuid.uuid4())
+    total_rules = await Rule.all().count()
+    await Task.create(
+        id=task_id,
+        status="pending",
+        total=total_rules
+    )
+    background_tasks.add_task(run_security_checks, task_id)
+    return {"task_id": task_id, "message": "检测任务已启动"}
+
+# 获取任务进度接口
+@app.get("/scan/{task_id}/progress", tags=["Rules"])
+async def get_task_progress(task_id: str):
+    """获取检测任务进度"""
+    task = await Task.get_or_none(id=task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    return {
+        "task_id": task_id,
+        "status": task.status,
+        "progress": task.progress,
+        "total": task.total
+    }
+
+# 获取检测结果接口
+@app.get("/scan/{task_id}/results", tags=["Rules"])
+async def get_task_results(task_id: str):
+    """获取检测任务详细结果"""
+    results = await TaskResult.filter(task_id=task_id).prefetch_related("rule")
+    return [
+        {
+            "rule_name": result.rule.name,
+            "output": json.loads(result.output),
+            "compliant": result.is_compliant,
+            "baseline": result.rule.baseline_standard
+        } for result in results
+    ]
 
 ##########################——————————————————其他接口——————————————————##########################
 
@@ -342,38 +293,3 @@ def get_login(credentials: dict = Body(...)):
             status_code=500,
             content={"detail": "配置文件格式错误"}
         )
-
-
-
-# 数据库查询接口
-@app.post("/query", tags=["Database"])
-def database_query(request: QueryRequest):
-    """
-    通用数据库查询接口
-    """
-    # 映射db_type到实际路径
-    db_path_map = {
-        "system": DB_PATH,
-        "detect": DB_DO,
-        "rules": DB_Rules
-    }
-
-    db_path = db_path_map.get(request.db_type)
-    if not db_path:
-        return JSONResponse(status_code=400, content={"detail": "无效的db_type，可选值：system, detect, rules"})
-
-    result = query_data_from_table(
-        db_path=db_path,
-        table_name=request.table_name,
-        where=request.where
-    )
-
-    if "error" in result:
-        return JSONResponse(status_code=500, content={"detail": result["error"]})
-    return result
-
-
-
-
-
-

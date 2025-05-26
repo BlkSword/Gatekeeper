@@ -3,7 +3,7 @@
     <!-- 状态概览 -->
     <el-row :gutter="20">
       <el-col :span="6">
-        <el-card class="status-card" style="background: #f0f9eb;"> 
+        <el-card class="status-card" style="background: #f0f9eb;">
           <div class="card-content">
             <i class="el-icon-success" style="color: #67c23a;"></i>
             <div class="info">
@@ -14,18 +14,18 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="status-card" style="background: #fdf6ec;"> 
+        <el-card class="status-card" style="background: #fdf6ec;">
           <div class="card-content">
             <i class="el-icon-warning" style="color: #e6a23c;"></i>
             <div class="info">
-              <p>警告项</p>
+              <p>风险项</p>
               <h3 style="color: #e6a23c;">10</h3>
             </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="status-card" style="background: #fef0f0;"> 
+        <el-card class="status-card" style="background: #fef0f0;">
           <div class="card-content">
             <i class="el-icon-error" style="color: #f56c6c;"></i>
             <div class="info">
@@ -36,7 +36,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="status-card" style="background: #f4f8fd;"> 
+        <el-card class="status-card" style="background: #f4f8fd;">
           <div class="card-content">
             <i class="el-icon-s-promotion" style="color: #409EFF;"></i>
             <div class="info">
@@ -58,7 +58,7 @@
           <div ref="pieChart" class="chart"></div>
         </el-card>
       </el-col>
-    
+
       <el-col :span="12">
         <el-card>
           <div slot="header" class="main-content">
@@ -98,12 +98,7 @@
     </el-row>
 
     <!-- 抽屉组件 -->
-    <el-drawer
-      v-model="drawerVisible"
-      title="全部检测结果"
-      direction="rtl"
-      size="60%"
-    >
+    <el-drawer v-model="drawerVisible" title="全部检测结果" direction="rtl" size="60%">
       <el-table :data="paginatedData" border style="margin: 0 20px">
         <el-table-column prop="name" label="检测名称" />
         <el-table-column prop="category" label="检测类别">
@@ -120,15 +115,10 @@
         </el-table-column>
         <el-table-column prop="time" label="检测时间" />
       </el-table>
-      
-      <el-pagination
-        layout="prev, pager, next"
-        :total="recentScans.length"
-        :page-size="pagination.pageSize"
-        :current-page="pagination.currentPage"
-        @current-change="handlePageChange"
-        style="text-align: center; margin-top: 20px"
-      />
+
+      <el-pagination layout="prev, pager, next" :total="recentScans.length" :page-size="pagination.pageSize"
+        :current-page="pagination.currentPage" @current-change="handlePageChange"
+        style="text-align: center; margin-top: 20px" />
     </el-drawer>
 
     <!-- 底部信息 -->
@@ -193,8 +183,8 @@ const openDrawer = () => {
 // 操作方法
 const viewDetails = (row) => {
   ElMessageBox.alert(
-    `检测名称：${row.name}\n检测类别：${row.category}\n等级：${row.level}\n检测时间：${row.time}`, 
-    '检测详情', 
+    `检测名称：${row.name}\n检测类别：${row.category}\n等级：${row.level}\n检测时间：${row.time}`,
+    '检测详情',
     { type: 'info' }
   )
 }
@@ -236,30 +226,30 @@ onMounted(() => {
     },
     legend: { data: ['通过项', '警告项', '失败项'] },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: { 
-      type: 'category', 
-      data: ['2023-09-15', '2023-09-14', '2023-09-13', '2023-09-12', '2023-09-11'] 
+    xAxis: {
+      type: 'category',
+      data: ['2023-09-15', '2023-09-14', '2023-09-13', '2023-09-12', '2023-09-11']
     },
-    yAxis: { 
+    yAxis: {
       type: 'value',
       name: '数量'
     },
     series: [
-      { 
-        name: '通过项', 
-        type: 'line', 
+      {
+        name: '通过项',
+        type: 'line',
         data: [85, 80, 78, 82, 83],
         itemStyle: { color: '#67c23a' }
       },
-      { 
-        name: '警告项', 
-        type: 'line', 
+      {
+        name: '警告项',
+        type: 'line',
         data: [10, 12, 15, 10, 11],
         itemStyle: { color: '#e6a23c' }
       },
-      { 
-        name: '失败项', 
-        type: 'line', 
+      {
+        name: '失败项',
+        type: 'line',
         data: [5, 8, 7, 8, 6],
         itemStyle: { color: '#f56c6c' }
       }
