@@ -254,6 +254,16 @@ async def get_task_results(task_id: str):
         } for result in results
     ]
 
+# 删除规则接口
+@app.get("/rules/delete/{name}", tags=["Rules"])
+async def delete_rule(name: str):
+    """通过名称删除检测规则（使用 GET 方法）"""
+    deleted_count = await Rule.filter(name=name).delete()
+    if deleted_count == 0:
+        raise HTTPException(status_code=404, detail="规则不存在")
+    return {"status": "success"}
+
+
 ##########################——————————————————其他接口——————————————————##########################
 
 @app.post("/login", tags=["Auth"])
