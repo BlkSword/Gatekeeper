@@ -7,7 +7,7 @@
           <div class="card-content">
             <i class="el-icon-success" style="color: #67c23a;"></i>
             <div class="info">
-              <p>通过项</p>
+              <p>风险</p>
               <h3 style="color: #67c23a;">85/100</h3>
             </div>
           </div>
@@ -18,7 +18,7 @@
           <div class="card-content">
             <i class="el-icon-warning" style="color: #e6a23c;"></i>
             <div class="info">
-              <p>风险项</p>
+              <p>警告</p>
               <h3 style="color: #e6a23c;">10</h3>
             </div>
           </div>
@@ -29,7 +29,7 @@
           <div class="card-content">
             <i class="el-icon-error" style="color: #f56c6c;"></i>
             <div class="info">
-              <p>失败项</p>
+              <p>建议</p>
               <h3 style="color: #f56c6c;">5</h3>
             </div>
           </div>
@@ -40,7 +40,7 @@
           <div class="card-content">
             <i class="el-icon-s-promotion" style="color: #409EFF;"></i>
             <div class="info">
-              <p>待处理</p>
+              <p>总事件</p>
               <h3 style="color: #409EFF;">3</h3>
             </div>
           </div>

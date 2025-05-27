@@ -18,10 +18,10 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from logging.handlers import RotatingFileHandler
 
-from database import init_db
-from models import Rule, Task, TaskResult
-from schemas import RuleCreate, RuleUpdate
-from rules_executor import run_security_checks
+from model.database import init_db
+from model.models import Rule, Task, TaskResult
+from model.schemas import RuleCreate, RuleUpdate
+from model.rules_executor import run_security_checks
 
 # 系统模块导入
 from system.system_status import check_system_status
@@ -65,36 +65,6 @@ def create_table(db_path: str, table_name: str):
 
 request_stats = {"total_requests": 0, "avg_response_time": 0.0}
 
-# 保留规则层数据库插入函数
-def insert_data_to_table(db_path: str, table_name: str, data: any):
-    """通用数据库数据插入函数"""
-    try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute(f'INSERT INTO {table_name} (data) VALUES (?)', (str(data),))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        logger.error(f"{table_name}数据库插入失败: {str(e)}\n{traceback.format_exc()}")
-
-# 查询函数
-def query_data_from_table(db_path: str, table_name: str, where: dict = None):
-    try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        query = f"SELECT * FROM {table_name}"
-        if where:
-            where_clause = " AND ".join([f"{k} = ?" for k in where.keys()])
-            query += f" WHERE {where_clause}"
-        cursor.execute(query, tuple(where.values()) if where else ())
-        columns = [desc[0] for desc in cursor.description]
-        rows = cursor.fetchall()
-        return {"columns": columns, "data": rows}
-    except Exception as e:
-        logger.error(f"查询 {table_name} 失败: {str(e)}\n{traceback.format_exc()}")
-        return {"error": str(e)}
-    finally:
-        conn.close()
 
 # 日志配置
 log_handler = RotatingFileHandler('./app.log', maxBytes=1024*1024*5, backupCount=3)
@@ -143,7 +113,7 @@ async def add_process_time_header(request: Request, call_next):
         logger.error(f"Request failed: {str(e)}\n{traceback.format_exc()}")
         return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
-##########################——————————————————主机检测层——————————————————##########################
+# ========== 主机检测层 ==========
 
 # 健康检查接口
 @app.get("/health", tags=["Other"])
@@ -175,7 +145,7 @@ def system_process():
 def system_running():
     return get_running_processes()
 
-##########################——————————————————实时检测层——————————————————##########################
+# ========== 实时检测层 ==========
 
 # 策略监控层
 @app.get("/detect_tactics", tags=["Detect"])
@@ -197,14 +167,28 @@ def detect_telnet():
 def detect_update():
     return get_detect_update()
 
-##########################——————————————————规则检测层——————————————————##########################
+# ========== 规则检测层 ==========
 
 # 创建规则接口
 @app.post("/rules", tags=["Rules"])
 async def create_rule(rule: RuleCreate):
-    """创建新的检测规则"""
-    db_rule = await Rule.create(**rule.dict())
-    return db_rule
+    """创建新的检测规则，若规则名重复则返回错误"""
+    existing_rule = await Rule.filter(name=rule.name).first()
+    if existing_rule:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "规则名称已存在"}
+        )
+
+    try:
+        db_rule = await Rule.create(**rule.dict())
+        return {"success": True, "data": db_rule}
+    except Exception as e:
+        logger.error(f"Failed to create rule: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "创建规则失败，请稍后重试"}
+        )
 
 # 获取所有规则接口
 @app.get("/rules", tags=["Rules"])
@@ -257,14 +241,14 @@ async def get_task_results(task_id: str):
 # 删除规则接口
 @app.get("/rules/delete/{name}", tags=["Rules"])
 async def delete_rule(name: str):
-    """通过名称删除检测规则（使用 GET 方法）"""
+    """通过名称删除检测规则"""
     deleted_count = await Rule.filter(name=name).delete()
     if deleted_count == 0:
         raise HTTPException(status_code=404, detail="规则不存在")
     return {"status": "success"}
 
 
-##########################——————————————————其他接口——————————————————##########################
+# ========== 其他接口 ==========
 
 @app.post("/login", tags=["Auth"])
 def get_login(credentials: dict = Body(...)):

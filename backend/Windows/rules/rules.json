@@ -1,47 +1,412 @@
-{
-    "账号规则相关检测": [
-        "密码最长使用期(天)",
-        "密码最短使用期(天)",
-        "密码历史记录",
-        "密码长度最小值",
-        "密码复杂性",
-        "默认管理员重命名",
-        "账户锁定阈值"
-    ],
-    "文件系统相关检测": [
-        "磁盘格式检测（NTFS）",
-        "默认共享检测（C$、ADMIN$等）"
-    ],
-    "日志规则相关检测": [
-        "审计策略（账户登录事件）",
-        "审计策略（账户管理）",
-        "审计策略（对象访问）",
-        "日志状态（系统日志）",
-        "日志状态（安全日志）",
-        "安全日志大小",
-        "安全日志覆盖策略"
-    ],
-    "权限规则相关检测": [
-        "可远程访问的注册表路径",
-        "从远程系统强制关机权限",
-        "取得文件所有权权限"
-    ],
-    "其他检测": [
-        "屏幕保护程序启用及密码保护",
-        "禁止自动登录",
-        "DLL劫持风险检测（无用户组对系统DLL有写权限）",
-        "受控文件夹访问"
-    ],
-    "协议规则相关检测": [
-        "Windows防火墙启用检测",
-        "SYN攻击保护检测（基于注册表）",
-        "远程桌面端口修改检测（基于注册表）"
-    ],
-    "服务相关检测": [
-        "不必要服务检测（TELNET、RemoteRegistry、SMTP等）",
-        "所有驱动器自动播放关闭状态检测（基于注册表）"
-    ],
-    "rule_number": [
-        "28"
-    ]
-}
+[
+    {
+        "name": "密码长度最小值检测",
+        "description": "检测密码最小长度是否≥8位",
+        "rule_type": "command",
+        "params": {
+            "command": "net accounts | findstr \"Minimum password length\""
+        },
+        "expected_result": {
+            "must_contain": "Minimum password length\\s+([8-9]|[1-9][0-9])",
+            "must_not_contain": "Minimum password length\\s+[0-7]\\b"
+        },
+        "baseline_standard": "密码长度最小值应≥8位",
+        "severity_level": "high"
+    },
+    {
+        "name": "管理员账号重命名检测",
+        "description": "检测默认管理员账号是否已重命名",
+        "rule_type": "command",
+        "params": {
+            "command": "net localgroup administrators | findstr /v \"--\\|命令\\|成员\\|The command\""
+        },
+        "expected_result": {
+            "must_not_contain": "Administrator\\b"
+        },
+        "baseline_standard": "应重命名默认管理员账号（Administrator）",
+        "severity_level": "high"
+    },
+    {
+        "name": "账户锁定阈值检测",
+        "description": "检测账户锁定阈值是否≤3次",
+        "rule_type": "command",
+        "params": {
+            "command": "secedit /export /cfg %TEMP%\\secpol.cfg && find \"LockoutThreshold\" %TEMP%\\secpol.cfg"
+        },
+        "expected_result": {
+            "must_contain": "LockoutThreshold\\s+=\\s+([1-3])\\b"
+        },
+        "baseline_standard": "建议3次失败登录后锁定",
+        "severity_level": "high"
+    },
+    {
+        "name": "密码复杂性策略检测",
+        "description": "检测密码复杂性策略是否启用",
+        "rule_type": "command",
+        "params": {
+            "command": "secedit /export /cfg %TEMP%\\secpol.cfg && find \"PasswordComplexity\" %TEMP%\\secpol.cfg"
+        },
+        "expected_result": {
+            "must_contain": "PasswordComplexity\\s+=\\s+1"
+        },
+        "baseline_standard": "建议启用密码复杂性策略",
+        "severity_level": "medium"
+    },
+    {
+        "name": "密码历史记录检测",
+        "description": "检测密码历史记录是否≥24个",
+        "rule_type": "command",
+        "params": {
+            "command": "net accounts | findstr \"Length of password history maintained\""
+        },
+        "expected_result": {
+            "must_contain": "Length of password history maintained\\s+([2-9][4-9]|[1-9][0-9]{2,})"
+        },
+        "baseline_standard": "建议至少保留24个历史密码",
+        "severity_level": "medium"
+    },
+    {
+        "name": "密码最长使用期检测",
+        "description": "检测密码最长使用期是否≤90天",
+        "rule_type": "command",
+        "params": {
+            "command": "net accounts | findstr \"Maximum password age\""
+        },
+        "expected_result": {
+            "must_contain": "Maximum password age\\s+([1-8][0-9]|90)\\b"
+        },
+        "baseline_standard": "建议不超过90天",
+        "severity_level": "medium"
+    },
+    {
+        "name": "密码最短使用期检测",
+        "description": "检测密码最短使用期是否≥1天",
+        "rule_type": "command",
+        "params": {
+            "command": "net accounts | findstr \"Minimum password age\""
+        },
+        "expected_result": {
+            "must_contain": "Minimum password age\\s+([1-9]|[1-9][0-9]+)"
+        },
+        "baseline_standard": "建议至少1天",
+        "severity_level": "medium"
+    },
+    {
+        "name": "磁盘格式检测（NTFS）",
+        "description": "检测本地磁盘是否使用NTFS文件系统",
+        "rule_type": "command",
+        "params": {
+            "command": "wmic logicaldisk get name,filesystem"
+        },
+        "expected_result": {
+            "must_contain": "NTFS",
+            "must_not_contain": "FAT32|exFAT|RAW"
+        },
+        "baseline_standard": "所有本地磁盘（C:、D:等）应使用NTFS文件系统",
+        "severity_level": "high"
+    },
+    {
+        "name": "默认共享检测（C$、ADMIN$等）",
+        "description": "检测是否启用C$、ADMIN$等默认共享",
+        "rule_type": "command",
+        "params": {
+            "command": "net share"
+        },
+        "expected_result": {
+            "must_contain": "\\w+\\$",
+            "must_not_contain": "C\\$|D\\$|ADMIN\\$"
+        },
+        "baseline_standard": "应禁用C$、D$、ADMIN$等默认共享",
+        "severity_level": "high"
+    },
+    {
+        "name": "账户登录事件检测",
+        "description": "检测是否同时审计账户登录的成功和失败事件",
+        "rule_type": "command",
+        "params": {
+            "command": "auditpol /get /category:*"
+        },
+        "expected_result": {
+            "must_contain": "Logon\\s+Success\\s+Failure"
+        },
+        "baseline_standard": "应同时审计成功和失败",
+        "severity_level": "high"
+    },
+    {
+        "name": "账户管理检测",
+        "description": "检测是否同时审计账户管理的成功和失败事件",
+        "rule_type": "command",
+        "params": {
+            "command": "auditpol /get /category:*"
+        },
+        "expected_result": {
+            "must_contain": "User Account Management\\s+Success\\s+Failure"
+        },
+        "baseline_standard": "应同时审计成功和失败",
+        "severity_level": "high"
+    },
+    {
+        "name": "对象访问检测",
+        "description": "检测是否审计对象访问的成功事件",
+        "rule_type": "command",
+        "params": {
+            "command": "auditpol /get /category:*"
+        },
+        "expected_result": {
+            "must_contain": "Object Access\\s+Success"
+        },
+        "baseline_standard": "应审计成功",
+        "severity_level": "medium"
+    },
+    {
+        "name": "系统日志状态检测",
+        "description": "检测系统日志是否已启用",
+        "rule_type": "command",
+        "params": {
+            "command": "wevtutil get-log System"
+        },
+        "expected_result": {
+            "must_contain": "enabled: true"
+        },
+        "baseline_standard": "系统日志应启用",
+        "severity_level": "medium"
+    },
+    {
+        "name": "安全日志状态检测",
+        "description": "检测安全日志是否已启用",
+        "rule_type": "command",
+        "params": {
+            "command": "wevtutil get-log Security"
+        },
+        "expected_result": {
+            "must_contain": "enabled: true"
+        },
+        "baseline_standard": "安全日志应启用",
+        "severity_level": "high"
+    },
+    {
+        "name": "安全日志大小检测",
+        "description": "检测安全日志大小是否不小于2048MB",
+        "rule_type": "command",
+        "params": {
+            "command": "wevtutil gl Security /f:xml"
+        },
+        "expected_result": {
+            "must_contain": "<MaxSize>([2-9][0-9]{6,}|20[4-9][8-9]\\d{6}|2048\\d{6})</MaxSize>"
+        },
+        "baseline_standard": "应设置为不小于2048MB",
+        "severity_level": "high"
+    },
+    {
+        "name": "安全日志覆盖策略检测",
+        "description": "检测安全日志是否配置为不覆盖旧日志",
+        "rule_type": "command",
+        "params": {
+            "command": "wevtutil gl Security /f:xml"
+        },
+        "expected_result": {
+            "must_contain": "<Retention>[1-9]\\d*</Retention>"
+        },
+        "baseline_standard": "应配置为不覆盖旧日志（保留历史记录）",
+        "severity_level": "high"
+    },
+    {
+        "name": "检测Windows系统版本",
+        "description": "检测Windows系统版本是否符合基线要求",
+        "rule_type": "command",
+        "params": {
+            "command": "wmic os get version,caption /format:csv"
+        },
+        "expected_result": {
+            "must_contain": [
+                "Windows 11",
+                "22H2"
+            ],
+            "must_not_contain": [
+                "Windows 10"
+            ]
+        },
+        "baseline_standard": "企业标准：Windows 11 22H2 或更高版本",
+        "severity_level": "high"
+    },
+    {
+        "name": "验证系统服务包",
+        "description": "验证系统服务包版本",
+        "rule_type": "command",
+        "params": {
+            "command": "reg query HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer /v OSVersion"
+        },
+        "expected_result": {
+            "must_contain": [
+                "Service Pack 2"
+            ],
+            "must_not_contain": [
+                "Service Pack 0"
+            ]
+        },
+        "baseline_standard": "企业标准：必须安装SP2及以上服务包",
+        "severity_level": "medium"
+    },
+    {
+        "name": "检测补丁更新",
+        "description": "检测关键更新补丁安装状态",
+        "rule_type": "command",
+        "params": {
+            "command": "wmic qfe list brief /format:csv"
+        },
+        "expected_result": {
+            "must_contain": [
+                "KB5026446",
+                "KB5027250"
+            ],
+            "must_not_contain": [
+                "Pending",
+                "Failed"
+            ]
+        },
+        "baseline_standard": "必须安装所有安全更新补丁",
+        "severity_level": "high"
+    },
+    {
+        "name": "remote_registry_access",
+        "description": "检测可远程访问的注册表路径配置",
+        "rule_type": "registry",
+        "params": {
+            "hive": "HKEY_LOCAL_MACHINE",
+            "key": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System",
+            "value_name": "RemoteRegAccessPaths"
+        },
+        "expected_result": {
+            "expected_value": "未配置"
+        },
+        "baseline_standard": "应仅允许必要的注册表路径被远程访问（如无特殊需求建议禁用）",
+        "severity_level": "high"
+    },
+    {
+        "name": "remote_shutdown_privilege",
+        "description": "检测从远程系统强制关机权限（SeRemoteShutdownPrivilege）",
+        "rule_type": "command",
+        "params": {
+            "command": "whoami /priv"
+        },
+        "expected_result": {
+            "must_not_contain": "SeRemoteShutdownPrivilege\\s+Enabled"
+        },
+        "baseline_standard": "应仅授权给管理员账户，普通用户禁止启用此权限",
+        "severity_level": "high"
+    },
+    {
+        "name": "take_ownership_privilege",
+        "description": "检测取得文件所有权权限（SeTakeOwnershipPrivilege）",
+        "rule_type": "command",
+        "params": {
+            "command": "whoami /priv"
+        },
+        "expected_result": {
+            "must_not_contain": "SeTakeOwnershipPrivilege\\s+Enabled"
+        },
+        "baseline_standard": "应仅授权给管理员账户，普通用户禁止启用此权限",
+        "severity_level": "high"
+    },
+    {
+        "name": "Windows 防火墙启用检测",
+        "description": "Ensure all Windows Firewall profiles (Domain, Private, Public) are enabled",
+        "rule_type": "command",
+        "params": {
+            "command": "netsh advfirewall show allprofiles state"
+        },
+        "expected_result": {
+            "must_contain": [
+                "启用",
+                "启用",
+                "启用"
+            ]
+        },
+        "baseline_standard": "应启用所有网络配置文件的Windows防火墙（域、专用、公用，共3个）",
+        "severity_level": "high"
+    },
+    {
+        "name": "SYN 攻击保护检测",
+        "description": "Ensure SYN attack protection is enabled with value 2",
+        "rule_type": "registry",
+        "params": {
+            "hive": "HKEY_LOCAL_MACHINE",
+            "key": "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+            "value_name": "SynAttackProtect"
+        },
+        "expected_result": {
+            "expected_value": 2
+        },
+        "baseline_standard": "应启用SYN攻击保护（建议值：2）",
+        "severity_level": "high"
+    },
+    {
+        "name": "远程桌面端口修改检测",
+        "description": "Ensure Remote Desktop port is not set to default (3389)",
+        "rule_type": "registry",
+        "params": {
+            "hive": "HKEY_LOCAL_MACHINE",
+            "key": "SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp",
+            "value_name": "PortNumber"
+        },
+        "expected_result": {
+            "must_not_contain": 3389
+        },
+        "baseline_standard": "应修改远程桌面默认端口（非3389）",
+        "severity_level": "medium"
+    },
+    {
+        "name": "TELNET服务禁用检测",
+        "description": "检测TELNET服务是否已禁用，防止未授权访问。",
+        "rule_type": "command",
+        "params": {
+            "command": "Get-Service -Name TELNET | Select-Object StartType"
+        },
+        "expected_result": {
+            "expected_value": "Disabled"
+        },
+        "baseline_standard": "应禁用TELNET、RemoteRegistry、SMTP等不必要服务（启动类型为Disabled）",
+        "severity_level": "high"
+    },
+    {
+        "name": "RemoteRegistry服务禁用检测",
+        "description": "检测RemoteRegistry服务是否已禁用，防止远程注册表访问。",
+        "rule_type": "command",
+        "params": {
+            "command": "Get-Service -Name RemoteRegistry | Select-Object StartType"
+        },
+        "expected_result": {
+            "expected_value": "Disabled"
+        },
+        "baseline_standard": "应禁用TELNET、RemoteRegistry、SMTP等不必要服务（启动类型为Disabled）",
+        "severity_level": "high"
+    },
+    {
+        "name": "SMTP服务禁用检测",
+        "description": "检测SMTP服务是否已禁用，防止未授权邮件服务暴露。",
+        "rule_type": "command",
+        "params": {
+            "command": "Get-Service -Name SMTP | Select-Object StartType"
+        },
+        "expected_result": {
+            "expected_value": "Disabled"
+        },
+        "baseline_standard": "应禁用TELNET、RemoteRegistry、SMTP等不必要服务（启动类型为Disabled）",
+        "severity_level": "medium"
+    },
+    {
+        "name": "驱动器自动播放禁用检测",
+        "description": "检测所有驱动器自动播放是否关闭（注册表值应为0x91）。",
+        "rule_type": "registry",
+        "params": {
+            "hive": "HKEY_LOCAL_MACHINE",
+            "key": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer",
+            "value_name": "NoDriveTypeAutoRun"
+        },
+        "expected_result": {
+            "expected_value": "0x91"
+        },
+        "baseline_standard": "应关闭所有驱动器自动播放（注册表值应为0x91）",
+        "severity_level": "medium"
+    }
+]
