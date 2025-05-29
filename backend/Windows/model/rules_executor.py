@@ -37,7 +37,7 @@ async def execute_rule(rule: Rule) -> dict:
             output = f"File check: {file_path}"
 
         elif rule.rule_type == "service":
-            # Linux 服务检查（systemctl）
+            # Linux 服务检查
             service_name = rule.params["service_name"]
             result = subprocess.run(
                 f"systemctl is-active {service_name}",
@@ -56,6 +56,31 @@ async def execute_rule(rule: Rule) -> dict:
             value, _ = winreg.QueryValueEx(key, rule.params["value_name"])
             is_compliant = value == rule.expected_result["expected_value"]
             output = f"Registry check: {rule.params['key']}\\{rule.params['value_name']}"
+
+        elif rule.rule_type == "python_script":
+            script_path = rule.params["script_path"]
+            args = rule.params.get("args", [])
+            
+            result = subprocess.run(
+                ["python", script_path] + args,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            output = result.stdout + result.stderr
+            
+            try:
+                json_output = json.loads(output)
+                is_compliant = json_output.get("status") is True
+                
+                # 输出信息包含状态和描述
+                detailed_report = json_output.get("message", "No detailed report")
+                output = f"Compliance Status: {'Compliant' if is_compliant else 'Non-compliant'}\n{detailed_report}"
+                
+            except (json.JSONDecodeError, KeyError, TypeError) as e:
+                is_compliant = False
+                output = f"JSON Parse Failed: {str(e)}\nRaw Output:\n{output}"  
 
         else:
             return {"error": f"Unsupported rule type: {rule.rule_type}"}

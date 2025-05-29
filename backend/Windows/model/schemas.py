@@ -6,11 +6,15 @@ from typing import Optional, Dict, Union
 class RuleCreate(BaseModel):
     name: str
     description: str
-    rule_type: str  # 枚举值：command/file/service/registry
-    params: Dict    # 规则参数（根据类型不同结构不同）
-    expected_result: Dict  # 预期结果（用于判断合规性）
-    baseline_standard: str  # 基线标准描述
-    severity_level: str  # 枚举值：high/medium/low
+    rule_type: str
+    params: Dict
+    expected_result: Dict
+    baseline_standard: str
+    severity_level: str
+    risk_description: str  
+    solution: str          
+    tip: str               
+
 
 class RuleUpdate(BaseModel):
     name: Optional[str] = None

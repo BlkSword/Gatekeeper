@@ -15,7 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import BackgroundTasks, HTTPException
 
 from pydantic import BaseModel  
-from typing import Optional, Dict, Any
+from tortoise import Tortoise
+from typing import List, Optional, Dict, Any
 from logging.handlers import RotatingFileHandler
 
 from model.database import init_db
@@ -84,10 +85,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 初始化数据库
+# 数据库启动和关闭事件
 @app.on_event("startup")
 async def startup_event():
     await init_db()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await Tortoise.close_connections()
 
 # 请求统计中间件
 @app.middleware("http")
@@ -112,6 +117,7 @@ async def add_process_time_header(request: Request, call_next):
     except Exception as e:
         logger.error(f"Request failed: {str(e)}\n{traceback.format_exc()}")
         return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+
 
 # ========== 主机检测层 ==========
 
@@ -189,6 +195,27 @@ async def create_rule(rule: RuleCreate):
             status_code=500,
             content={"success": False, "message": "创建规则失败，请稍后重试"}
         )
+    
+
+# 批量创建规则接口
+@app.post("/rules/batch", tags=["Rules"])
+async def create_rules(rules: List[RuleCreate]):
+    """批量创建检测规则，跳过已存在的规则"""
+    results = []
+    for rule in rules:
+        existing_rule = await Rule.filter(name=rule.name).first()
+        if existing_rule:
+            results.append({"name": rule.name, "status": "skipped", "message": "规则名称已存在"})
+            continue
+            
+        try:
+            db_rule = await Rule.create(**rule.dict())
+            results.append({"name": rule.name, "status": "success", "data": db_rule})
+        except Exception as e:
+            logger.error(f"Failed to create rule {rule.name}: {str(e)}")
+            results.append({"name": rule.name, "status": "failed", "message": str(e)})
+            
+    return {"results": results}
 
 # 获取所有规则接口
 @app.get("/rules", tags=["Rules"])
@@ -287,3 +314,9 @@ def get_login(credentials: dict = Body(...)):
             status_code=500,
             content={"detail": "配置文件格式错误"}
         )
+
+
+# # 测试
+# @app.get("/test", tags=["test"])
+# def rules_account():
+#     return get_rules_account()
