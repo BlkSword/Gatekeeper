@@ -34,59 +34,59 @@
           </div>
         </div>
       </header>
-
       <!-- 主要内容区域 -->
       <main class="main-content">
         <!-- 安全评分区域 -->
         <div class="score-card">
           <div class="score-circle" ref="chartContainer" style="margin-left: 3rem;"></div>
           <div class="scan-info" style="margin-left: 3rem;">
-            <p style="font-size: 1.5rem;">已完成安全扫描，已检测到 <span class="risk-highlight">{{ riskCount }}</span> 个风险</p>
-            <p style="color:dimgray">上次扫描时间：{{ lastScanTime }}</p>
+            <p style="font-size: 1.5rem;">
+              {{ scanStatusText }}
+            </p>
+            <p style="color:dimgray">{{ scanTimeText }}</p>
           </div>
           <div style="margin-right: 3rem; align-self: center;">
-            <span 
-              class="fix-link" 
-              @click="handleFixSelected"
-              :class="{ 'disabled': !hasSelected }"
-              v-show="selectedCount > 0"
-            >修复选中项</span>
+            <span class="fix-link" @click="handleFixSelected" :class="{ 'disabled': !hasSelected }"
+              v-show="selectedCount > 0">修复选中项</span>
             <button class="scan-button" @click="startScan">立即扫描</button>
           </div>
         </div>
-
         <!-- 风险列表 -->
-          <div class="risk-list">
-            <div class="risk-header">
-              <label>
-                <input type="checkbox" v-model="selectAll" @change="toggleAllSelection">
-                <span class="cleckbox-label">全选</span>
-              </label>
+        <div class="risk-list">
+          <div class="risk-header">
+            <label>
+              <input type="checkbox" v-model="selectAll" @change="toggleAllSelection">
+              <span class="cleckbox-label">全选</span>
+            </label>
+          </div>
+          <!-- 空状态提示 -->
+          <div v-if="risks.length === 0 && !isLoading" class="empty-state">
+            暂无风险数据，请先进行安全扫描
+          </div>
+          <div v-else-if="isLoading" class="empty-state">
+            正在扫描中...
+          </div>
+          <div v-for="(risk, index) in risks" :key="risk.title" class="risk-item">
+            <div class="risk-checkbox">
+              <input type="checkbox" v-model="risk.selected" :disabled="!isScanned">
             </div>
-            <div v-for="(risk, index) in risks" :key="index" class="risk-item">
-              <div class="risk-checkbox">
-                <input type="checkbox" v-model="risk.selected">
+            <div class="risk-details">
+              <div class="risk-header">
+                <span class="risk-level" :style="{
+                  backgroundColor: riskColors[risk.level]?.bg || '#f5f5f5',
+                  color: riskColors[risk.level]?.text || '#8c8c8c'
+                }">{{ risk.level }}</span>
+                <span class="risk-title">{{ risk.title }}</span>
               </div>
-              <div class="risk-details">
-                <div class="risk-header">
-                  <span class="risk-level" 
-                    :style="{
-                      backgroundColor: riskColors[risk.level]?.bg || '#f5f5f5',
-                      color: riskColors[risk.level]?.text || '#8c8c8c'
-                    }"
-                  >{{ risk.level }}</span>
-                  <span class="risk-title">{{ risk.title }}</span>
-                </div>
-              </div>
-              <div class="risk-actions">
-                <button class="risk-button" @click="handleAction(index, '修复')">修复</button>
-                <button class="risk-button" @click="handleAction(index, '忽略')">忽略</button>
-                <button class="risk-button" @click="handleAction(index, '详情')">详情</button>
-              </div>
+            </div>
+            <div class="risk-actions">
+              <button class="risk-button" @click="handleAction(index, '修复')" :disabled="!isScanned">修复</button>
+              <button class="risk-button" @click="handleAction(index, '忽略')" :disabled="!isScanned">忽略</button>
+              <button class="risk-button" @click="handleAction(index, '详情')" :disabled="!isScanned">详情</button>
             </div>
           </div>
+        </div>
       </main>
-
       <!-- 风险详情弹窗 -->
       <div v-if="showDetails" class="details-modal">
         <div class="modal-content">
@@ -113,86 +113,47 @@
     </el-scrollbar>
   </div>
 </template>
-
 <script>
 import * as echarts from 'echarts';
 
 export default {
   data() {
     return {
-      score: 66,
-      riskCount: 13,
-      lastScanTime: '2025-05-20 22:24:07',
+      score: 0,
+      riskCount: 0,
+      lastScanTime: '',
       selectAll: false,
-      showReportDialog: false,    
-      showRuleDialog: false,     
+      showReportDialog: false,
+      showRuleDialog: false,
       chartInstance: null,
+      isScanned: false,
+      isLoading: false,
       riskColors: {
-        高危: { bg: '#fff0f0', text: '#ff4d4f' },    
-        中危: { bg: '#fff7e6', text: '#ffa940' },  
-        低危: { bg: '#edefd0', text: '#b8bf40' }      
+        高危: { bg: '#fff0f0', text: '#ff4d4f' },
+        中危: { bg: '#fff7e6', text: '#ffa940' },
+        低危: { bg: '#edefd0', text: '#b8bf40' },
+        未检测: { bg: '#f5f5f5', text: '#8c8c8c' }
       },
       showDetails: false,
       selectedRisk: {},
-      risks: [
-        { 
-          title: '检测是否开启系统防火墙', 
-          level: '高危',
-          description: '系统未启用防火墙可能导致网络攻击风险',
-          solution: '请执行ufw enable命令启用防火墙',
-          tip: '建议定期检查防火墙规则有效性',
-          selected: false 
-        },
-        { 
-          title: '检测是否使用安全的套接字层加密', 
-          level: '中危',
-          description: '未使用SSL/TLS加密可能导致数据泄露',
-          solution: '配置服务器强制使用TLS 1.2及以上版本',
-          tip: '定期更新SSL证书',
-          selected: false 
-        },
-        { 
-          title: '检查是否设置无操作超时退出', 
-          level: '低危',
-          description: '会话超时设置过长可能导致安全风险',
-          solution: '建议设置超时时间为15分钟',
-          tip: '需结合业务需求调整',
-          selected: false 
-        },
-        { 
-          title: '是否限制核心转储', 
-          level: '中危',
-          description: '核心转储可能包含敏感信息',
-          solution: '通过ulimit -c 0禁用核心转储',
-          tip: '需确认应用程序调试需求',
-          selected: false 
-        },
-        { 
-          title: 'SSH 登录超时配置检测', 
-          level: '高危',
-          description: 'SSH登录超时设置过长可能导致暴力破解',
-          solution: '在sshd_config中设置LoginGraceTime为60',
-          tip: '建议配合fail2ban使用',
-          selected: false 
-        },
-        { 
-          title: '检查SSH密码修改最小间隔', 
-          level: '中危',
-          description: '密码修改间隔过短可能导致密码策略失效',
-          solution: '设置PASS_MIN_DAYS为7',
-          tip: '需结合企业安全策略',
-          selected: false 
-        }
-      ]
+      // 初始化为空数组
+      risks: []
     }
   },
   computed: {
     selectedCount() {
       return this.risks.filter(risk => risk.selected).length;
+    },
+    scanStatusText() {
+      return this.isScanned
+        ? `已完成安全扫描，已检测到${this.riskCount} 个风险`
+        : '尚未进行安全扫描';
+    },
+    scanTimeText() {
+      return this.isScanned
+        ? `上次扫描时间：${this.lastScanTime}`
+        : '点击右下方按钮开始首次扫描';
     }
-  },
-  hasSelected() {
-    return this.selectedCount > 0;
   },
   mounted() {
     this.initChart();
@@ -206,7 +167,73 @@ export default {
   },
   methods: {
     startScan() {
-      console.log('开始新的安全扫描');
+      // 强制清空原有数据
+      this.risks = [];
+      this.isScanned = false;
+      this.isLoading = true;
+
+      // 创建新的数组实例确保响应式更新
+      setTimeout(() => {
+        this.isScanned = true;
+        this.isLoading = false;
+        this.score = 66;
+        this.riskCount = 13;
+        this.lastScanTime = new Date().toLocaleString();
+
+        this.risks = [
+          {
+            title: '检测是否开启系统防火墙',
+            level: '高危',
+            description: '系统未启用防火墙可能导致网络攻击风险',
+            solution: '请执行ufw enable命令启用防火墙',
+            tip: '建议定期检查防火墙规则有效性',
+            selected: false
+          },
+          {
+            title: '检测是否使用安全的套接字层加密',
+            level: '中危',
+            description: '未使用SSL/TLS加密可能导致数据泄露',
+            solution: '配置服务器强制使用TLS 1.2及以上版本',
+            tip: '定期更新SSL证书',
+            selected: false
+          },
+          {
+            title: '检查是否设置无操作超时退出',
+            level: '低危',
+            description: '会话超时设置过长可能导致安全风险',
+            solution: '建议设置超时时间为15分钟',
+            tip: '需结合业务需求调整',
+            selected: false
+          },
+          {
+            title: '是否限制核心转储',
+            level: '中危',
+            description: '核心转储可能包含敏感信息',
+            solution: '通过ulimit -c 0禁用核心转储',
+            tip: '需确认应用程序调试需求',
+            selected: false
+          },
+          {
+            title: 'SSH 登录超时配置检测',
+            level: '高危',
+            description: 'SSH登录超时设置过长可能导致暴力破解',
+            solution: '在sshd_config中设置LoginGraceTime为60',
+            tip: '建议配合fail2ban使用',
+            selected: false
+          },
+          {
+            title: '检查SSH密码修改最小间隔',
+            level: '中危',
+            description: '密码修改间隔过短可能导致密码策略失效',
+            solution: '设置PASS_MIN_DAYS为7',
+            tip: '需结合企业安全策略',
+            selected: false
+          }
+        ];
+
+        this.selectAll = false;
+        this.initChart();
+      }); // 模拟网络延迟
     },
     handleFixSelected() {
       if (this.selectedCount) {
@@ -226,30 +253,33 @@ export default {
       }
     },
     toggleAllSelection() {
-      this.risks.forEach(risk => {
-        risk.selected = this.selectAll;
+      const newSelection = this.selectAll;
+      this.risks = this.risks.map(risk => {
+        return { ...risk, selected: newSelection };
       });
     },
     initChart() {
       const chartDom = this.$refs.chartContainer;
+      if (this.chartInstance) {
+        this.chartInstance.dispose();
+      }
       this.chartInstance = echarts.init(chartDom);
-      
       const getScoreColor = (score) => {
-        const r = Math.round(255 * (1 - score/100));
-        const g = Math.round(255 * (score/100));
+        if (!this.isScanned) return '#e6e6e6';
+        const r = Math.round(255 * (1 - score / 100));
+        const g = Math.round(255 * (score / 100));
         return `rgb(${r},${g},0)`;
       };
-      
       const option = {
         graphic: {
           elements: [{
             type: 'text',
             key: 'scoreText',
             style: {
-              text: `${this.score}`,
+              text: this.isScanned ? `${this.score}` : '0',
               fontSize: 40,
               fontWeight: 'bold',
-              fill: getScoreColor(this.score),
+              fill: this.isScanned ? getScoreColor(this.score) : '#e6e6e6',
               textAlign: 'center',
               textVerticalAlign: 'middle'
             },
@@ -259,7 +289,7 @@ export default {
         },
         series: [{
           type: 'pie',
-          radius: ['80%', '90%'], 
+          radius: ['80%', '90%'],
           itemStyle: {
             borderRadius: 5,
             borderColor: '#fff',
@@ -276,13 +306,13 @@ export default {
             }
           },
           data: [{
-            value: this.score,
+            value: this.isScanned ? this.score : 0,
             name: '得分',
             itemStyle: {
-              color: getScoreColor(this.score)
+              color: this.isScanned ? getScoreColor(this.score) : '#e6e6e6'
             }
           }, {
-            value: 100 - this.score,
+            value: this.isScanned ? (100 - this.score) : 100,
             name: '剩余',
             itemStyle: {
               color: '#e6e6e6'
@@ -290,22 +320,34 @@ export default {
           }]
         }]
       };
-      
       this.chartInstance.setOption(option);
     },
     updateChartColor() {
-      const option = this.chartInstance.getOption();
+      if (!this.chartInstance) return;
+
       const newColor = this.getScoreColor(this.score);
-      
-      option.series[0].data[0].itemStyle.color = newColor;
-      option.graphic.elements[0].style.fill = newColor;
-      option.graphic.elements[0].style.text = this.score;
-      
-      this.chartInstance.setOption(option);
+
+      this.chartInstance.setOption({
+        series: [{
+          data: [{
+            itemStyle: {
+              color: newColor
+            }
+          }]
+        }],
+        graphic: {
+          elements: [{
+            style: {
+              fill: newColor,
+              text: this.isScanned ? `${this.score}` : '0'
+            }
+          }]
+        }
+      });
     },
     getScoreColor(score) {
-      const r = Math.round(255 * (1 - score/100));
-      const g = Math.round(255 * (score/100));
+      const r = Math.round(255 * (1 - score / 100));
+      const g = Math.round(255 * (score / 100));
       return `rgb(${r},${g},0)`;
     },
     resizeHandler() {
@@ -322,9 +364,14 @@ export default {
       if (this.chartInstance && newVal !== oldVal) {
         this.updateChartColor();
       }
+    },
+    risks: {
+      deep: true,
+      handler() {
+        this.selectAll = false;
+      }
     }
   }
 }
 </script>
-
 <style scoped src="../assets/css/CheckView.css"></style>

@@ -5,7 +5,7 @@ import json
 import re
 import hashlib
 import winreg  # Windows only
-from model.models import Rule, TaskResult
+from rules.models import Rule, TaskResult
 
 async def execute_rule(rule: Rule) -> dict:
     try:
@@ -95,7 +95,7 @@ async def execute_rule(rule: Rule) -> dict:
 
 async def run_security_checks(task_id: str):
     """异步执行所有规则检测"""
-    from model.models import Task
+    from rules.models import Task
     task = await Task.get(id=task_id)
     rules = await Rule.all()
     total = len(rules)

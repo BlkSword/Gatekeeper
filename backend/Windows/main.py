@@ -1,5 +1,6 @@
 # uvicorn main:app --reload
 
+import asyncio
 import sqlite3
 import time
 import logging
@@ -19,10 +20,14 @@ from tortoise import Tortoise
 from typing import List, Optional, Dict, Any
 from logging.handlers import RotatingFileHandler
 
-from model.database import init_db
-from model.models import Rule, Task, TaskResult
-from model.schemas import RuleCreate, RuleUpdate
-from model.rules_executor import run_security_checks
+from baseline.database.init_db import init_baseline_db
+from baseline.tasks.background_tasks import collect_metrics
+from asyncio import create_task
+from rules.database import init_db
+
+from rules.models import Rule, Task, TaskResult
+from rules.schemas import RuleCreate, RuleUpdate
+from rules.rules_executor import run_security_checks
 
 # 系统模块导入
 from system.system_status import check_system_status
@@ -31,11 +36,9 @@ from system.system_process import get_process_info
 from system.system_running import get_running_processes
 from system.system_traffic import get_system_traffic
 
-# 检测模块导入
-from detect.detect_tactics import get_detect_tactics
-from detect.detect_start import get_detect_start
-from detect.detect_telnet import get_detect_telnet
-from detect.detect_update import get_detect_update
+# 基线检测模块导入
+from baseline.baseline_routes import router as baseline_router
+
 
 # 其他模块导入
 from other.health_check import get_health_check
@@ -89,10 +92,22 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     await init_db()
+    await init_baseline_db()
+
+    logger.info("Start a scheduled task...")
+    app.state.metrics_task = create_task(collect_metrics())
 
 @app.on_event("shutdown")
 async def shutdown_event():
     await Tortoise.close_connections()
+
+    if hasattr(app.state, "metrics_task"):
+        logger.info("Cancel a scheduled task...")
+        app.state.metrics_task.cancel()
+        try:
+            await app.state.metrics_task
+        except asyncio.CancelledError:
+            logger.info("The scheduled task has been successfully canceled")
 
 # 请求统计中间件
 @app.middleware("http")
@@ -151,27 +166,9 @@ def system_process():
 def system_running():
     return get_running_processes()
 
-# ========== 实时检测层 ==========
+# ========== 动态检测层 ==========
 
-# 策略监控层
-@app.get("/detect_tactics", tags=["Detect"])
-def detect_tactics():
-    return get_detect_tactics()
-
-# 服务启动检测
-@app.get("/detect_start", tags=["Detect"])
-def detect_start():
-    return get_detect_start()
-
-# 网络配置检测
-@app.get("/detect_telnet", tags=["Detect"])
-def detect_telnet():
-    return get_detect_telnet()
-
-# 更新检测
-@app.get("/detect_update", tags=["Detect"])
-def detect_update():
-    return get_detect_update()
+app.include_router(baseline_router)  # 注册基线路由
 
 # ========== 规则检测层 ==========
 
@@ -240,15 +237,22 @@ async def start_scan(background_tasks: BackgroundTasks):
 # 获取任务进度接口
 @app.get("/scan/{task_id}/progress", tags=["Rules"])
 async def get_task_progress(task_id: str):
-    """获取检测任务进度"""
+    """获取检测任务进度及合规统计"""
     task = await Task.get_or_none(id=task_id)
     if not task:
         raise HTTPException(status_code=404, detail="任务不存在")
+    
+    # 统计合规与不合规数量
+    compliant_count = await TaskResult.filter(task_id=task_id, is_compliant=True).count()
+    non_compliant_count = await TaskResult.filter(task_id=task_id, is_compliant=False).count()
+
     return {
         "task_id": task_id,
         "status": task.status,
         "progress": task.progress,
-        "total": task.total
+        "total": task.total,
+        "compliant_count": compliant_count,
+        "non_compliant_count": non_compliant_count
     }
 
 # 获取检测结果接口
@@ -273,6 +277,34 @@ async def delete_rule(name: str):
     if deleted_count == 0:
         raise HTTPException(status_code=404, detail="规则不存在")
     return {"status": "success"}
+
+# 查询合规接口
+@app.get("/non-compliant-rules")
+async def get_non_compliant_rules(task_id: str):
+    try:
+        # 查询不合规的检测结果并预加载关联规则
+        non_compliant_results = await TaskResult.filter(
+            task_id=task_id,
+            is_compliant=False
+        ).select_related('rule')
+        
+        # 提取规则ID并统计数量
+        rule_ids = [result.rule.id for result in non_compliant_results]
+        
+        return {
+            "status": "success",
+            "data": rule_ids,
+            "total": len(rule_ids)
+        }
+        
+    except Exception as e:
+        # 记录错误日志
+        logger.error(f"获取不合规规则失败: {str(e)}")
+        # 抛出500错误
+        raise HTTPException(
+            status_code=500,
+            detail=f"服务器内部错误: {str(e)}"
+        )
 
 
 # ========== 其他接口 ==========
