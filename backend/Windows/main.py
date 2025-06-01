@@ -20,12 +20,10 @@ from tortoise import Tortoise
 from typing import List, Optional, Dict, Any
 from logging.handlers import RotatingFileHandler
 
-from baseline.database.init_db import init_baseline_db
 from baseline.tasks.background_tasks import collect_metrics
 from asyncio import create_task
-from rules.database import init_db
 
-from rules.models import Rule, Task, TaskResult
+from rules.rules_models import Rule, Task, TaskResult
 from rules.schemas import RuleCreate, RuleUpdate
 from rules.rules_executor import run_security_checks
 
@@ -91,9 +89,29 @@ app.add_middleware(
 # 数据库启动和关闭事件
 @app.on_event("startup")
 async def startup_event():
-    await init_db()
-    await init_baseline_db()
+    # 配置多数据库连接
+    await Tortoise.init(
+        config={
+            "connections": {
+                "rules_db": "sqlite://database/security_check.db",  
+                "baseline_db": "sqlite://database/baseline.db"     
+            },
+            "apps": {
+                "rules_app": {  
+                    "models": ["rules.rules_models"],
+                    "default_connection": "rules_db"  
+                },
+                "baseline_app": {  
+                    "models": ["baseline.database.base_models"],
+                    "default_connection": "baseline_db"  
+                }
+            }
+        }
+    )
+    # 为所有连接生成表结构（或指定具体连接名）
+    await Tortoise.generate_schemas()  
 
+    # 启动后台任务
     logger.info("Start a scheduled task...")
     app.state.metrics_task = create_task(collect_metrics())
 
@@ -234,6 +252,27 @@ async def start_scan(background_tasks: BackgroundTasks):
     background_tasks.add_task(run_security_checks, task_id)
     return {"task_id": task_id, "message": "检测任务已启动"}
 
+# 单一规则检测接口
+@app.post("/scan/single", tags=["Rules"])
+async def start_single_scan(background_tasks: BackgroundTasks, name: str = Body(..., embed=True)):
+    """启动异步安全检测任务，仅针对指定名称的规则"""
+    # 查询指定名称的规则
+    rule = await Rule.filter(name=name).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="规则未找到")
+
+    task_id = str(uuid.uuid4())
+    await Task.create(
+        id=task_id,
+        status="pending",
+        total=1 
+    )
+    
+    # 将规则名称传递给执行函数
+    background_tasks.add_task(run_security_checks, task_id, rule_name=name)
+    return {"task_id": task_id, "message": f"检测任务已启动，正在执行规则：{name}"}
+
+
 # 获取任务进度接口
 @app.get("/scan/{task_id}/progress", tags=["Rules"])
 async def get_task_progress(task_id: str):
@@ -309,6 +348,7 @@ async def get_non_compliant_rules(task_id: str):
 
 # ========== 其他接口 ==========
 
+# 登录接口
 @app.post("/login", tags=["Auth"])
 def get_login(credentials: dict = Body(...)):
     username = credentials.get("username")
@@ -340,11 +380,6 @@ def get_login(credentials: dict = Body(...)):
         return JSONResponse(
             status_code=500,
             content={"detail": "配置文件不存在"}
-        )
-    except json.JSONDecodeError:
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "配置文件格式错误"}
         )
 
 

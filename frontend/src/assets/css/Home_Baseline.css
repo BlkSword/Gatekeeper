@@ -7,7 +7,6 @@
 }
 
 .status-card {
-    height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -38,11 +37,6 @@
 
 .chart {
     height: 350px;
-}
-
-.safety-tips {
-    background: #fff;
-    text-align: center;
 }
 
 .card-header {

@@ -313,15 +313,6 @@
           style="margin-top: 15px;" />
       </div>
     </el-drawer>
-
-    <!-- 底部信息 -->
-    <el-row>
-      <el-col :span="24">
-        <div class="safety-tips">
-          <p>© 2025 System Monitor By XiaoHei</p>
-        </div>
-      </el-col>
-    </el-row>
   </div>
 </template>
 

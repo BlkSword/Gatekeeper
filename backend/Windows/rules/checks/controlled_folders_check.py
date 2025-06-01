@@ -1,5 +1,6 @@
 # 受控文件夹检测
 import winreg
+import json
 
 def run_check():
     try:
@@ -14,4 +15,5 @@ def run_check():
         return {"check_name": "受控文件夹访问检测", "status": False}
     
 if __name__ == "__main__":
-    print(run_check())
+    result = run_check()
+    print(json.dumps(result, ensure_ascii=False)) 

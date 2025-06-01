@@ -3,9 +3,10 @@
 import subprocess
 import json
 import re
+import os
 import hashlib
 import winreg  # Windows only
-from rules.models import Rule, TaskResult
+from rules.rules_models import Rule, TaskResult
 
 async def execute_rule(rule: Rule) -> dict:
     try:
@@ -58,6 +59,7 @@ async def execute_rule(rule: Rule) -> dict:
             output = f"Registry check: {rule.params['key']}\\{rule.params['value_name']}"
 
         elif rule.rule_type == "python_script":
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
             script_path = rule.params["script_path"]
             args = rule.params.get("args", [])
             
@@ -72,15 +74,26 @@ async def execute_rule(rule: Rule) -> dict:
             
             try:
                 json_output = json.loads(output)
-                is_compliant = json_output.get("status") is True
+                # 两种格式解析
+                checks = json_output.get("security_policy", {}).get("checks", [])
+                if checks:  
+                    is_compliant = all(check.get("status") is True for check in checks)
+                    detailed_report = "\n".join([
+                        f"{check.get('check_name', 'Unknown')}: {'Compliant' if check.get('status') else 'Non-compliant'}"
+                        for check in checks
+                    ]) if checks else "No checks found in response"
+                else:  
+                    is_compliant = json_output.get("status") is True
+                    detailed_report = json_output.get("message", "No detailed report")
                 
-                # 输出信息包含状态和描述
-                detailed_report = json_output.get("message", "No detailed report")
                 output = f"Compliance Status: {'Compliant' if is_compliant else 'Non-compliant'}\n{detailed_report}"
                 
-            except (json.JSONDecodeError, KeyError, TypeError) as e:
+            except json.JSONDecodeError as e:
                 is_compliant = False
-                output = f"JSON Parse Failed: {str(e)}\nRaw Output:\n{output}"  
+                output = f"JSON Parse Failed: {str(e)}\nRaw Output:\n{output}"
+            except Exception as e:
+                is_compliant = False
+                output = f"Error processing response: {str(e)}\nRaw Output:\n{output}"  
 
         else:
             return {"error": f"Unsupported rule type: {rule.rule_type}"}
@@ -95,7 +108,7 @@ async def execute_rule(rule: Rule) -> dict:
 
 async def run_security_checks(task_id: str):
     """异步执行所有规则检测"""
-    from rules.models import Task
+    from rules.rules_models import Task
     task = await Task.get(id=task_id)
     rules = await Rule.all()
     total = len(rules)

@@ -5,6 +5,7 @@
     right: 0;
     bottom: 0;
     left: 0;
+    background-color: rgb(247, 248, 250);
 }
 
 /* element-ui 容器全屏设置 */
@@ -47,17 +48,6 @@
     font-size: 18px;
     color: #333;
     font-weight: 600;
-}
-
-/* 通知消息样式 */
-.notifications {
-    background-color: #bc2626;
-    color: #fff;
-    padding: 5px 5px;
-    border-radius: 4px;
-    font-size: 14px;
-    min-width: 24px;
-    text-align: center;
 }
 
 /* 菜单样式 */

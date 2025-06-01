@@ -2,6 +2,7 @@
 
 import subprocess
 import re
+import json
 
 def run_check():
     try:
@@ -24,4 +25,5 @@ def run_check():
         return {"check_name": "磁盘格式检测（NTFS）", "status": False, "error": str(e)}
     
 if __name__ == "__main__":
-    print(run_check())
+    result = run_check()
+    print(json.dumps(result, ensure_ascii=False)) 

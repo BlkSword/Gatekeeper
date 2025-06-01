@@ -2,6 +2,7 @@
 
 import subprocess
 import re
+import json
 
 def run_check():
     try:
@@ -15,4 +16,5 @@ def run_check():
         return {"check_name": "默认共享检测（C$、ADMIN$等）", "status": False, "error": str(e)}
     
 if __name__ == "__main__":
-    print(run_check())
+    result = run_check()
+    print(json.dumps(result, ensure_ascii=False)) 

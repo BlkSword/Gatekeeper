@@ -1,7 +1,8 @@
-# 不必要服务禁用检测
+# 不必要服务禁用检测(TELNET、RemoteRegistry、SMTP)
 
 import subprocess
 import re
+import json
 
 def run_check():
     check_name = "不必要的服务禁用检查"
@@ -35,4 +36,5 @@ def run_check():
         }
 
 if __name__ == "__main__":
-    print(run_check())
+    result = run_check()
+    print(json.dumps(result, ensure_ascii=False)) 

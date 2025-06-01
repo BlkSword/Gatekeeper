@@ -1,6 +1,7 @@
 # 驱动器自动播放关闭检测
 
 import winreg
+import json
 
 def run_check():
     check_name = "驱动器自动播放关闭检查"
@@ -29,4 +30,5 @@ def run_check():
         }
 
 if __name__ == "__main__":
-    print(run_check())
+    result = run_check()
+    print(json.dumps(result, ensure_ascii=False)) 

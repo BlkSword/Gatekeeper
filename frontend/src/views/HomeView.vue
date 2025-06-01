@@ -15,7 +15,6 @@
               </el-button>
             </el-button-group>
           </el-col>
-
           <!-- 退出登录按钮 -->
           <el-col :span="18">
             <div class="logout-container">
@@ -24,7 +23,6 @@
           </el-col>
         </el-row>
       </div>
-
       <!-- 动态内容区域 -->
       <div class="content-container">
         <component :is="currentComponent" />

@@ -1,6 +1,7 @@
 # 密码复杂性策略检测
 import subprocess
 import os
+import json
 
 def run_check():
     try:
@@ -18,4 +19,5 @@ def run_check():
         }
     
 if __name__ == "__main__":
-    print(run_check())
+    result = run_check()
+    print(json.dumps(result, ensure_ascii=False)) 

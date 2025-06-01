@@ -3,7 +3,7 @@
 import asyncio
 from .baseline_status import check_baseline_status
 from baseline.model.ewm_model import EWMModel
-from baseline.database.models import BaselineConfig, BaselineHistory
+from baseline.database.base_models import BaselineConfig, BaselineHistory
 # from alert.alert_service import trigger_alert
 import logging
 

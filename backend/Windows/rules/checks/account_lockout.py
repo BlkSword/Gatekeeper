@@ -1,4 +1,5 @@
-# account_lockout.py
+# 账户锁定阈值
+
 import subprocess
 import os
 import re
@@ -24,4 +25,4 @@ def run_check():
 
 if __name__ == "__main__":
     result = run_check()
-    print(json.dumps(result, ensure_ascii=False))  # 输出标准 JSON
+    print(json.dumps(result, ensure_ascii=False)) 

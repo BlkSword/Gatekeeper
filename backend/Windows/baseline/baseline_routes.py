@@ -1,4 +1,4 @@
-
+# 路由配置
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 # 本地模块导入
 from baseline.model.ewm_model import EWMModel
-from baseline.database.models import BaselineConfig, BaselineHistory
+from baseline.database.base_models import BaselineConfig, BaselineHistory
 
 router = APIRouter(prefix="/baseline", tags=["Baseline"])
 

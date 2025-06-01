@@ -2,28 +2,22 @@
 
 import subprocess
 import re
+import json
 
 def run_check():
     try:
         audit_policy = subprocess.getoutput('auditpol /get /category:*')
         status = bool(re.search(r"Logon\s+Success\s+Failure", audit_policy))
         return {
-            "security_policy": {
-                "checks": [{
-                    "check_name": "账户登录事件检测",
-                    "status": status
-                }]
-            }
+            "check_name": "账户锁定阈值",
+            "status": status
         }
     except:
         return {
-            "security_policy": {
-                "checks": [{
-                    "check_name": "账户登录事件检测",
-                    "status": False
-                }]
-            }
+            "check_name": "账户锁定阈值",
+            "status": False
         }
 
 if __name__ == "__main__":
-    print(run_check())
+    result = run_check()
+    print(json.dumps(result, ensure_ascii=False)) 

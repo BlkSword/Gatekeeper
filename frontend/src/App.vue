@@ -9,7 +9,6 @@
             <img src="/src/assets/Gatekeeper.svg" alt="Logo" class="logo" />
             <span class="safe-text">Gatekeeper</span>
           </div>
-          <div class="notifications">0</div>
         </div>
 
         <!-- 导航菜单 -->

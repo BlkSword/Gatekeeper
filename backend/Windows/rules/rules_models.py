@@ -18,6 +18,7 @@ class Rule(Model):
 
     class Meta:
         table = "security_rules"
+        using_db = "rules_db" 
 
 class Task(Model):
     id = fields.CharField(max_length=36, pk=True)  # UUID 作为主键
@@ -29,14 +30,16 @@ class Task(Model):
 
     class Meta:
         table = "scan_tasks"
+        using_db = "rules_db" 
 
 class TaskResult(Model):
     id = fields.IntField(pk=True)
-    task = fields.ForeignKeyField("models.Task", related_name="results")
-    rule = fields.ForeignKeyField("models.Rule", related_name="check_results")
+    task = fields.ForeignKeyField("rules_app.Task", related_name="results")
+    rule = fields.ForeignKeyField("rules_app.Rule", related_name="check_results")
     output = fields.TextField()                    # 检测输出
     is_compliant = fields.BooleanField()           # 是否合规
     executed_at = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
         table = "task_results"
+        using_db = "rules_db"  

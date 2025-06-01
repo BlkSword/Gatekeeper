@@ -3,45 +3,45 @@
     <!-- 状态概览 -->
     <el-row :gutter="20">
       <el-col :span="6">
-        <el-card class="status-card" style="background: #f0f9eb;">
+        <el-card class="status-card">
           <div class="card-content">
-            <i class="el-icon-success" style="color: #67c23a;"></i>
+            <i class="el-icon-success" style="color: #409EFF;"></i>
             <div class="info">
-              <p>风险</p>
-              <h3 style="color: #67c23a;">85/100</h3>
+              <p>总检查项</p>
+              <h3 style="color: #409EFF;">85</h3>
             </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="status-card" style="background: #fdf6ec;">
+        <el-card class="status-card">
           <div class="card-content">
-            <i class="el-icon-warning" style="color: #e6a23c;"></i>
+            <i class="el-icon-warning" style="color: #67c23a;"></i>
+            <div class="info">
+              <p>通过</p>
+              <h3 style="color: #67c23a;">10</h3>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card class="status-card">
+          <div class=" card-content">
+            <i class="el-icon-error" style="color: #e6a23c;"></i>
             <div class="info">
               <p>警告</p>
-              <h3 style="color: #e6a23c;">10</h3>
+              <h3 style="color: #e6a23c;">5</h3>
             </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="status-card" style="background: #fef0f0;">
+        <el-card class="status-card">
           <div class="card-content">
-            <i class="el-icon-error" style="color: #f56c6c;"></i>
+            <i class="el-icon-s-promotion" style="color: #f56c6c;"></i>
             <div class="info">
-              <p>建议</p>
-              <h3 style="color: #f56c6c;">5</h3>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card class="status-card" style="background: #f4f8fd;">
-          <div class="card-content">
-            <i class="el-icon-s-promotion" style="color: #409EFF;"></i>
-            <div class="info">
-              <p>总事件</p>
-              <h3 style="color: #409EFF;">3</h3>
+              <p>失败</p>
+              <h3 style="color: #f56c6c;">3</h3>
             </div>
           </div>
         </el-card>
@@ -120,15 +120,6 @@
         :current-page="pagination.currentPage" @current-change="handlePageChange"
         style="text-align: center; margin-top: 20px" />
     </el-drawer>
-
-    <!-- 底部信息 -->
-    <el-row>
-      <el-col :span="24">
-        <div class="safety-tips">
-          <p>© 2025 Password By XiaoHei</p>
-        </div>
-      </el-col>
-    </el-row>
   </div>
 </template>
 

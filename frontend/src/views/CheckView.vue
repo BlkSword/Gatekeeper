@@ -46,7 +46,7 @@
             <p style="color:dimgray">{{ scanTimeText }}</p>
           </div>
           <div style="margin-right: 3rem; align-self: center;">
-            <span class="fix-link" @click="handleFixSelected" :class="{ 'disabled': !hasSelected }"
+            <span class="fix-link" @click="handleFixSelected" :class="{ 'disabled': selectedCount === 0 }"
               v-show="selectedCount > 0">修复选中项</span>
             <button class="scan-button" @click="startScan">立即扫描</button>
           </div>
@@ -113,6 +113,7 @@
     </el-scrollbar>
   </div>
 </template>
+
 <script>
 import * as echarts from 'echarts';
 
@@ -159,27 +160,36 @@ export default {
     this.initChart();
     window.addEventListener('resize', this.resizeHandler);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     window.removeEventListener('resize', this.resizeHandler);
     if (this.chartInstance) {
       this.chartInstance.dispose();
+      this.chartInstance = null;
     }
   },
   methods: {
     startScan() {
-      // 强制清空原有数据
-      this.risks = [];
+      // 取消已有的图表实例
+      if (this.chartInstance) {
+        this.chartInstance.dispose();
+        this.chartInstance = null;
+      }
+
+      // 重置状态并开始扫描
       this.isScanned = false;
       this.isLoading = true;
+      this.risks = []; // 清空旧数据
 
-      // 创建新的数组实例确保响应式更新
+      // 模拟异步扫描
       setTimeout(() => {
+        // 更新扫描结果
         this.isScanned = true;
         this.isLoading = false;
         this.score = 66;
         this.riskCount = 13;
         this.lastScanTime = new Date().toLocaleString();
 
+        // 更新风险列表
         this.risks = [
           {
             title: '检测是否开启系统防火墙',
@@ -231,9 +241,11 @@ export default {
           }
         ];
 
-        this.selectAll = false;
-        this.initChart();
-      }); // 模拟网络延迟
+        // 强制触发DOM更新后再初始化图表
+        this.$nextTick(() => {
+          this.initChart(); // 确保DOM更新后再初始化
+        });
+      }, 0);
     },
     handleFixSelected() {
       if (this.selectedCount) {
@@ -259,17 +271,14 @@ export default {
       });
     },
     initChart() {
+      // 获取容器
       const chartDom = this.$refs.chartContainer;
-      if (this.chartInstance) {
-        this.chartInstance.dispose();
-      }
+      if (!chartDom) return;
+
+      // 创建新实例
       this.chartInstance = echarts.init(chartDom);
-      const getScoreColor = (score) => {
-        if (!this.isScanned) return '#e6e6e6';
-        const r = Math.round(255 * (1 - score / 100));
-        const g = Math.round(255 * (score / 100));
-        return `rgb(${r},${g},0)`;
-      };
+
+      // 构建图表配置
       const option = {
         graphic: {
           elements: [{
@@ -279,7 +288,7 @@ export default {
               text: this.isScanned ? `${this.score}` : '0',
               fontSize: 40,
               fontWeight: 'bold',
-              fill: this.isScanned ? getScoreColor(this.score) : '#e6e6e6',
+              fill: this.getScoreColor(this.score),
               textAlign: 'center',
               textVerticalAlign: 'middle'
             },
@@ -298,21 +307,14 @@ export default {
           label: {
             show: false
           },
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
-            }
-          },
           data: [{
-            value: this.isScanned ? this.score : 0,
+            value: this.score,
             name: '得分',
             itemStyle: {
-              color: this.isScanned ? getScoreColor(this.score) : '#e6e6e6'
+              color: this.getScoreColor(this.score)
             }
           }, {
-            value: this.isScanned ? (100 - this.score) : 100,
+            value: 100 - this.score,
             name: '剩余',
             itemStyle: {
               color: '#e6e6e6'
@@ -320,30 +322,36 @@ export default {
           }]
         }]
       };
+
+      // 设置配置项并绑定resize事件
       this.chartInstance.setOption(option);
+      window.addEventListener('resize', this.resizeHandler);
     },
     updateChartColor() {
       if (!this.chartInstance) return;
 
       const newColor = this.getScoreColor(this.score);
 
-      this.chartInstance.setOption({
+      // 完全更新图表配置
+      const option = {
+        graphic: {
+          elements: [{
+            style: {
+              fill: newColor,
+              text: `${this.score}`
+            }
+          }]
+        },
         series: [{
           data: [{
             itemStyle: {
               color: newColor
             }
           }]
-        }],
-        graphic: {
-          elements: [{
-            style: {
-              fill: newColor,
-              text: this.isScanned ? `${this.score}` : '0'
-            }
-          }]
-        }
-      });
+        }]
+      };
+
+      this.chartInstance.setOption(option);
     },
     getScoreColor(score) {
       const r = Math.round(255 * (1 - score / 100));
@@ -374,4 +382,5 @@ export default {
   }
 }
 </script>
+
 <style scoped src="../assets/css/CheckView.css"></style>
