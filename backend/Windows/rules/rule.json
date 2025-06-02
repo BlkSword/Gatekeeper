@@ -156,7 +156,7 @@
             "message": "所有检查的磁盘(C:,D:,E:,F:)均使用NTFS文件系统"
         },
         "baseline_standard": "CIS Microsoft Windows 10 Enterprise Benchmark v2.0.0 - 18.9.1 Ensure system drives are configured to use NTFS",
-        "severity_level": "high",
+        "severity_level": "medium",
         "risk_description": "非NTFS文件系统可能导致数据损坏、安全性降低和功能限制，包括：1. 缺乏Windows权限管理支持 2. 无法使用加密文件系统(EFS) 3. 性能优化不足 4. 数据恢复风险增加",
         "solution": "1. 备份重要数据\n2. 打开命令提示符(管理员)\n3. 输入 convert X: /fs:ntfs (X为对应盘符)\n4. 按照提示完成转换过程\n5. 验证转换结果",
         "tip": "转换文件系统前请务必备份重要数据，建议在系统维护时段操作。对于系统分区(C:)，建议通过组策略统一配置文件系统类型。"
@@ -354,7 +354,7 @@
             "message": "返回状态值status为True（密码最短使用期≥1天）"
         },
         "baseline_standard": "CIS Microsoft Windows Security Benchmark 第4.1.3条",
-        "severity_level": "high",
+        "severity_level": "low",
         "risk_description": "密码最短使用期过短可能导致攻击者通过快速重置密码绕过账户锁定策略，增加密码泄露风险",
         "solution": "1. 打开组策略编辑器(gpedit.msc)\n2. 导航至计算机配置->Windows设置->安全设置->账户策略->密码策略\n3. 配置'密码最短使用期限'为1天或更长\n4. 或通过命令行执行: net accounts /MINPWAGE:1",
         "tip": "建议定期检查密码策略配置，确保符合企业安全合规要求"
@@ -390,7 +390,7 @@
             "message": "当RemoteRegAccessPaths未配置或配置路径数≤2时返回True，否则返回False"
         },
         "baseline_standard": "微软安全基线建议限制远程注册表访问路径数量，防止攻击者通过共享路径进行横向渗透",
-        "severity_level": "high",
+        "severity_level": "low",
         "risk_description": "若存在过多远程注册表访问路径，攻击者可能利用合法共享路径访问敏感注册表信息，导致系统权限被窃取",
         "solution": "1. 打开组策略编辑器(gpedit.msc)\n2. 导航至计算机配置->Windows设置->安全设置->本地策略->安全选项\n3. 配置'网络访问: 可远程访问的注册表路径'策略\n4. 删除不必要的共享路径，仅保留必要路径如：System\\CurrentControlSet\n5. 通过reg add命令手动清理注册表残留路径",
         "tip": "建议定期使用reg query命令验证注册表路径配置，确保符合最小权限原则"
@@ -426,7 +426,7 @@
             "message": "屏幕保护程序启用、超时时间≤900秒且启用了密码保护"
         },
         "baseline_standard": "CIS Microsoft Windows Benchmark 2.2.11/12/13 要求：1.启用屏幕保护程序 2.超时时间≤900秒 3.启用密码保护",
-        "severity_level": "high",
+        "severity_level": "medium",
         "risk_description": "未配置安全的屏幕保护程序可能导致无人值守时未授权访问系统，造成敏感信息泄露或恶意操作",
         "solution": "1. 打开控制面板 > 个性化 > 屏幕保护程序设置\n2. 选择屏幕保护程序并启用\n3. 设置等待时间不超过15分钟\n4. 勾选'恢复时显示登录屏幕'\n5. 通过组策略(gpedit.msc)配置：计算机配置 > 管理模板 > 控制面板 > 个性化 > 强制设置屏幕保护程序",
         "tip": "建议在电源管理设置中同步调整显示器关闭时间和休眠时间，建议超时时间不超过900秒（15分钟）"
@@ -444,7 +444,7 @@
             "message": "当安全日志最大容量 >= 2048MB 时返回 {\"status\": true}，否则返回 false"
         },
         "baseline_standard": "安全日志最大存储容量应至少配置为2048MB",
-        "severity_level": "high",
+        "severity_level": "medium",
         "risk_description": "安全日志容量不足可能导致安全事件记录丢失，增加系统被攻击后无法追溯的风险",
         "solution": "1. 打开命令提示符执行: wevtutil set-log Security /maxSize:2147483648\n2. 或通过组策略配置: 计算机配置 -> Windows设置 -> 安全设置 -> 事件日志 -> 安全日志\n3. 设置最大日志大小为2048MB（2GB）",
         "tip": "修改日志大小后需要重启事件日志服务生效，建议在维护窗口操作"

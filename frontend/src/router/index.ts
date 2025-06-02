@@ -6,7 +6,7 @@ import CheckView from '../views/CheckView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import LoginView from '../views/LoginView.vue'
 
-import AccountSettings from '../views/Setting/AccountSettings.vue'
+import ThresholdSettings from '../views/Setting/ThresholdSettings.vue'
 import PasswordSettings from '../views/Setting/PasswordSettings.vue'
 import AlertSettings from '../views/Setting/AlertSettings.vue'
 
@@ -37,12 +37,12 @@ const routes = [
     name: 'settings',
     component: SettingsView,
     meta: { requiresAuth: true },
-    redirect: '/settings/account',
+    redirect: '/settings/threshold',
     children: [
       {
-        path: 'account',
-        name: 'AccountSettings',
-        component: AccountSettings
+        path: 'threshold',
+        name: 'ThresholdSettings',
+        component: ThresholdSettings
       },
       {
         path: 'password',

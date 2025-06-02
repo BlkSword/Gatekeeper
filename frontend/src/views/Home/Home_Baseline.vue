@@ -8,7 +8,7 @@
             <i class="el-icon-success" style="color: #409EFF;"></i>
             <div class="info">
               <p>总检查项</p>
-              <h3 style="color: #409EFF;">85</h3>
+              <h3 style="color: #409EFF;">{{ total }}</h3>
             </div>
           </div>
         </el-card>
@@ -19,18 +19,18 @@
             <i class="el-icon-warning" style="color: #67c23a;"></i>
             <div class="info">
               <p>通过</p>
-              <h3 style="color: #67c23a;">10</h3>
+              <h3 style="color: #67c23a;">{{ compliant }}</h3>
             </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card class="status-card">
-          <div class=" card-content">
+          <div class="card-content">
             <i class="el-icon-error" style="color: #e6a23c;"></i>
             <div class="info">
               <p>警告</p>
-              <h3 style="color: #e6a23c;">5</h3>
+              <h3 style="color: #e6a23c;">{{ warning }}</h3>
             </div>
           </div>
         </el-card>
@@ -41,7 +41,7 @@
             <i class="el-icon-s-promotion" style="color: #f56c6c;"></i>
             <div class="info">
               <p>失败</p>
-              <h3 style="color: #f56c6c;">3</h3>
+              <h3 style="color: #f56c6c;">{{ failed }}</h3>
             </div>
           </div>
         </el-card>
@@ -64,189 +64,218 @@
           <div slot="header" class="main-content">
             <span>动态基线状态</span>
           </div>
-          <div ref="chart" class="chart"></div>
+          <div ref="lineChart" class="chart"></div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 检测结果列表 -->
+    <!-- 检测记录列表 -->
     <el-row :gutter="20" class="main-content">
       <el-col :span="24">
         <el-card>
           <div slot="header" class="card-header">
-            <span>安全动态</span>
-            <el-button type="text" style="float: right; padding: 3px 0" @click="openDrawer">更多</el-button>
+            <span>最近检测记录</span>
           </div>
-          <el-table :data="limitedRecentScans" border>
-            <el-table-column prop="name" label="检测名称" />
-            <el-table-column prop="category" label="检测类别">
-              <template #default="{ row }">
-                <span>{{ row.category }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="level" label="等级">
-              <template #default="{ row }">
-                <el-tag :type="row.level === '高危' ? 'danger' : row.level === '中危' ? 'warning' : 'primary'">
-                  {{ row.level }}
-                </el-tag>
-              </template>
-            </el-table-column>
+          <el-table :data="recentScans.slice(0, 3)" border style="width: 100%">
+            <el-table-column prop="id" label="检测ID" width="400" />
+            <el-table-column prop="total" label="总项数" />
+            <el-table-column prop="compliant" label="合规数" />
             <el-table-column prop="time" label="检测时间" />
           </el-table>
         </el-card>
       </el-col>
     </el-row>
-
-    <!-- 抽屉组件 -->
-    <el-drawer v-model="drawerVisible" title="全部检测结果" direction="rtl" size="60%">
-      <el-table :data="paginatedData" border style="margin: 0 20px">
-        <el-table-column prop="name" label="检测名称" />
-        <el-table-column prop="category" label="检测类别">
-          <template #default="{ row }">
-            <span>{{ row.category }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="level" label="等级">
-          <template #default="{ row }">
-            <el-tag :type="row.level === '高危' ? 'danger' : row.level === '中危' ? 'warning' : 'primary'">
-              {{ row.level }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="time" label="检测时间" />
-      </el-table>
-
-      <el-pagination layout="prev, pager, next" :total="recentScans.length" :page-size="pagination.pageSize"
-        :current-page="pagination.currentPage" @current-change="handlePageChange"
-        style="text-align: center; margin-top: 20px" />
-    </el-drawer>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import * as echarts from 'echarts'
-import { ElMessageBox } from 'element-plus'
 
-// 模拟数据
-const recentScans = ref([
-  { name: '检测事件1', category: '静态规则', level: '高危', time: '2023-09-15 14:30' },
-  { name: '动态检测2', category: '动态基线', level: '中危', time: '2023-09-14 09:15' },
-  { name: '安全扫描3', category: '静态规则', level: '低危', time: '2023-09-13 16:45' },
-  { name: '合规检查4', category: '动态基线', level: '低危', time: '2023-09-12 11:20' },
-  { name: '漏洞扫描5', category: '静态规则', level: '中危', time: '2023-09-11 15:50' },
-  { name: '配置审计6', category: '静态规则', level: '高危', time: '2023-09-10 10:00' },
-  { name: '权限检测7', category: '动态基线', level: '低危', time: '2023-09-09 14:30' },
-  { name: '日志分析8', category: '动态基线', level: '中危', time: '2023-09-08 16:45' }
-])
+// 状态概览数据
+const total = ref(0)
+const compliant = ref(0)
+const warning = ref(0)
+const failed = ref(0)
 
-// 计算属性
-const limitedRecentScans = computed(() => {
-  return recentScans.value.slice(0, 3)
-})
-
-// 分页相关状态
-const drawerVisible = ref(false)
-const pagination = ref({
-  currentPage: 1,
-  pageSize: 10
-})
-
-// 分页数据计算
-const paginatedData = computed(() => {
-  const start = (pagination.value.currentPage - 1) * pagination.value.pageSize
-  const end = start + pagination.value.pageSize
-  return recentScans.value.slice(start, end)
-})
-
-// 分页事件处理
-const handlePageChange = (page) => {
-  pagination.value.currentPage = page
-}
-
-// 打开抽屉方法
-const openDrawer = () => {
-  drawerVisible.value = true
-  // 重置到第一页
-  pagination.value.currentPage = 1
-}
-
-// 操作方法
-const viewDetails = (row) => {
-  ElMessageBox.alert(
-    `检测名称：${row.name}\n检测类别：${row.category}\n等级：${row.level}\n检测时间：${row.time}`,
-    '检测详情',
-    { type: 'info' }
-  )
-}
-
-// 图表初始化逻辑
-const chart = ref(null)
+// 图表引用
 const pieChart = ref(null)
+const lineChart = ref(null)
 
-onMounted(() => {
-  // 初始化漏洞级别占比饼图
-  const pieInstance = echarts.init(pieChart.value)
-  const pieOption = {
-    tooltip: { trigger: 'item' },
-    legend: { orient: 'vertical', right: 10 },
-    series: [
-      {
-        type: 'pie',
-        radius: '70%',
-        center: ['50%', '50%'],
-        data: [
-          { value: 5, name: '高危' },
-          { value: 10, name: '中危' },
-          { value: 20, name: '低危' }
-        ],
-        emphasis: {
-          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+// 检测记录数据
+const recentScans = ref([])
+
+// 时间格式化函数
+function formatTime(isoString) {
+  const date = new Date(isoString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
+onMounted(async () => {
+  try {
+    // 获取最近任务ID和状态概览数据
+    const lastRes = await fetch('http://127.0.0.1:8000/last')
+    if (!lastRes.ok) throw new Error('获取任务ID失败')
+    const lastData = await lastRes.json()
+    const taskId = lastData.task_id
+
+    // 获取进度数据
+    const progressRes = await fetch(`http://127.0.0.1:8000/scan/${taskId}/progress`)
+    if (!progressRes.ok) throw new Error('获取进度数据失败')
+    const progressData = await progressRes.json()
+
+    // 更新状态概览数据
+    total.value = progressData.total || 0
+    compliant.value = progressData.compliant_count || 0
+    warning.value = progressData.non_compliant_count || 0
+    failed.value = total.value - compliant.value - warning.value
+
+    // 获取非合规规则数据
+    const nonCompliantRes = await fetch(`http://127.0.0.1:8000/non-compliant-rules?task_id=${taskId}`)
+    if (!nonCompliantRes.ok) throw new Error('获取非合规规则失败')
+    const nonCompliantData = await nonCompliantRes.json()
+
+    // 提取风险统计数据
+    const highRisk = nonCompliantData.statistics.high_risk.count || 0
+    const mediumRisk = nonCompliantData.statistics.medium_risk.count || 0
+    const lowRisk = nonCompliantData.statistics.low_risk.count || 0
+
+    // 初始化漏洞级别占比饼图
+    const pieInstance = echarts.init(pieChart.value)
+    const pieOption = {
+      tooltip: { trigger: 'item' },
+      legend: { orient: 'vertical', right: 10 },
+      series: [
+        {
+          type: 'pie',
+          radius: '70%',
+          center: ['50%', '50%'],
+          data: [
+            { value: highRisk, name: '高危' },
+            { value: mediumRisk, name: '中危' },
+            { value: lowRisk, name: '低危' }
+          ],
+          emphasis: {
+            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+          }
         }
-      }
-    ]
-  }
-  pieInstance.setOption(pieOption)
+      ]
+    }
+    pieInstance.setOption(pieOption)
 
-  // 初始化动态基线状态折线图
-  const baselineChart = echarts.init(chart.value)
-  const baselineOption = {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' }
-    },
-    legend: { data: ['通过项', '警告项', '失败项'] },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      data: ['2023-09-15', '2023-09-14', '2023-09-13', '2023-09-12', '2023-09-11']
-    },
-    yAxis: {
-      type: 'value',
-      name: '数量'
-    },
-    series: [
-      {
-        name: '通过项',
-        type: 'line',
-        data: [85, 80, 78, 82, 83],
-        itemStyle: { color: '#67c23a' }
+    // 新增：获取CPU使用率基线数据
+    const cpuBaselineRes = await fetch('http://localhost:8000/baseline/latest/cpu_usage')
+    if (!cpuBaselineRes.ok) throw new Error('获取CPU基线数据失败')
+    const cpuBaselineData = await cpuBaselineRes.json()
+
+    // 处理CPU基线数据
+    const processedData = cpuBaselineData.data.map(item => ({
+      timestamp: formatTime(item.timestamp),
+      actual: parseFloat(item.value.toFixed(1)),
+      baseline: parseFloat(item.baseline.toFixed(1))
+    }))
+
+    // 提取日期数组和数值数组
+    const dates = processedData.map(item => item.timestamp)
+    const actualValues = processedData.map(item => item.actual)
+    const baselineValues = processedData.map(item => item.baseline)
+
+    // 初始化动态基线状态折线图
+    const baselineChart = echarts.init(lineChart.value)
+    const baselineOption = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'line' },
+        formatter: (params) => {
+          return `${params[0].axisValue}<br/>` +
+            `实际值: ${params[0].value}<br/>` +
+            `基线值: ${params[1].value}`
+        }
       },
-      {
-        name: '警告项',
-        type: 'line',
-        data: [10, 12, 15, 10, 11],
-        itemStyle: { color: '#e6a23c' }
+      legend: {
+        data: ['实际值', '基线值'],
+        top: 20
       },
-      {
-        name: '失败项',
-        type: 'line',
-        data: [5, 8, 7, 8, 6],
-        itemStyle: { color: '#f56c6c' }
-      }
-    ]
+      grid: {
+        left: '8%',
+        right: '8%',
+        bottom: '10%',
+        top: '25%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        name: '时间',
+        data: dates
+      },
+      yAxis: {
+        type: 'value',
+        name: 'CPU使用率 (%)'
+      },
+      series: [
+        {
+          name: '实际值',
+          type: 'line',
+          data: actualValues,
+          itemStyle: { color: '#67c23a' },
+          lineStyle: { width: 2 },
+          showSymbol: true,
+          symbolSize: 6
+        },
+        {
+          name: '基线值',
+          type: 'line',
+          data: baselineValues,
+          itemStyle: { color: '#409EFF' },
+          lineStyle: { width: 2, type: 'dashed' },
+          showSymbol: true,
+          symbolSize: 6
+        }
+      ],
+      dataZoom: [
+        {
+          type: 'slider',
+          start: 0,
+          end: 100,
+          height: 12,
+          bottom: 10
+        }
+      ]
+    }
+    baselineChart.setOption(baselineOption)
+
+    // 获取最近三个任务数据
+    const lastThreeRes = await fetch('http://127.0.0.1:8000/last-three')
+    if (!lastThreeRes.ok) throw new Error('获取最近任务失败')
+    const lastThreeTasks = await lastThreeRes.json()
+
+    // 处理每个任务以获取合规数据
+    const scanRecords = []
+    for (const task of lastThreeTasks) {
+      // 获取任务进度
+      const progressRes = await fetch(`http://127.0.0.1:8000/scan/${task.task_id}/progress`)
+      if (!progressRes.ok) continue
+      const progressData = await progressRes.json()
+
+      scanRecords.push({
+        id: task.task_id,
+        total: progressData.total || 0,
+        compliant: progressData.compliant_count || 0,
+        time: formatTime(task.created_at)
+      })
+    }
+
+    // 更新检测记录
+    recentScans.value = scanRecords
+
+  } catch (error) {
+    console.error('数据获取异常:', error)
   }
-  baselineChart.setOption(baselineOption)
 })
 </script>
 

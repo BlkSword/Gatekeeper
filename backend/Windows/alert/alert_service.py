@@ -4,12 +4,12 @@ from email.mime.multipart import MIMEMultipart
 from email.header import Header
 
 
-host_server = 'smtp.qq.com'  #qq邮箱smtp服务器
+host_server = 'smtp.qq.com'  #smtp服务器
 sender_qq = 'wfshenm@qq.com' #发件人邮箱
 pwd = 'tsbfpwnfsuocciha'
 receiver = ['wfshenm@qq.com' ]#收件人邮箱
-mail_title = 'Python自动发送的邮件' #邮件标题
-mail_content = "您好，这是使用python登录QQ邮箱发送邮件的测试" #邮件正文内容
+mail_title = '测试邮件' #邮件标题
+mail_content = "这是一封测试邮件" #邮件正文内容
 
 msg = MIMEMultipart()
 msg["Subject"] = Header(mail_title,'utf-8')

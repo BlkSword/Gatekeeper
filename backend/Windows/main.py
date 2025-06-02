@@ -188,6 +188,39 @@ def system_running():
 
 app.include_router(baseline_router)  # 注册基线路由
 
+# 检测任务控制接口
+@app.get("/metrics-task-control", tags=["baseline"])
+async def control_metrics_task(action: Optional[str] = Query(None)):
+    # 返回当前状态
+    if action is None:
+        if hasattr(app.state, "metrics_task"):
+            if not app.state.metrics_task.done():
+                return {"status": "Task is running"}
+            return {"status": "Task exists but is not running"}
+        return {"status": "Task not found"}
+    
+    if action == "start":
+        if not hasattr(app.state, "metrics_task") or app.state.metrics_task.done():
+            app.state.metrics_task = create_task(collect_metrics())
+            return {"status": "Metrics task started"}
+        return {"status": "Task already running"}
+    
+    elif action == "stop":
+        if hasattr(app.state, "metrics_task"):
+            app.state.metrics_task.cancel()
+            del app.state.metrics_task
+            return {"status": "Metrics task stopped"}
+        return {"status": "Task not found"}
+    
+    elif action == "restart":
+        if hasattr(app.state, "metrics_task"):
+            app.state.metrics_task.cancel()
+        app.state.metrics_task = create_task(collect_metrics())
+        return {"status": "Metrics task restarted"}
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid action")
+
 # ========== 规则检测层 ==========
 
 # 创建规则接口
@@ -302,9 +335,7 @@ async def get_task_results(task_id: str):
     return [
         {
             "rule_name": result.rule.name,
-            "output": json.loads(result.output),
             "compliant": result.is_compliant,
-            "baseline": result.rule.baseline_standard
         } for result in results
     ]
 
@@ -317,33 +348,91 @@ async def delete_rule(name: str):
         raise HTTPException(status_code=404, detail="规则不存在")
     return {"status": "success"}
 
-# 查询合规接口
-@app.get("/non-compliant-rules")
-async def get_non_compliant_rules(task_id: str):
-    try:
-        # 查询不合规的检测结果并预加载关联规则
-        non_compliant_results = await TaskResult.filter(
-            task_id=task_id,
-            is_compliant=False
-        ).select_related('rule')
-        
-        # 提取规则ID并统计数量
-        rule_ids = [result.rule.id for result in non_compliant_results]
-        
-        return {
-            "status": "success",
-            "data": rule_ids,
-            "total": len(rule_ids)
+# 查询警告占比接口
+@app.get("/non-compliant-rules", tags=["Rules"])
+async def get_non_compliant_severity(task_id: str = Query(...)):
+    # 查询有效规则结果
+    results = await TaskResult.filter(
+        task_id=task_id,
+        is_compliant=0,
+        rule_id__in=await Rule.all().values_list("id", flat=True)
+    ).values('rule__severity_level')
+    
+    # 初始化统计结构
+    counts = {
+        "high": 0,
+        "medium": 0,
+        "low": 0
+    }
+    
+    # 处理查询结果
+    for item in results:
+        level = item['rule__severity_level']
+        if level in counts:
+            counts[level] += 1
+    
+    return {
+        "task_id": task_id,
+        "statistics": {
+            "high_risk": {"count": counts["high"]},
+            "medium_risk": {"count": counts["medium"]},
+            "low_risk": {"count": counts["low"]}
         }
-        
-    except Exception as e:
-        # 记录错误日志
-        logger.error(f"获取不合规规则失败: {str(e)}")
-        # 抛出500错误
-        raise HTTPException(
-            status_code=500,
-            detail=f"服务器内部错误: {str(e)}"
-        )
+    }
+
+# 获取单个规则参数
+@app.post("/rulesfind", tags=["Rules"])
+async def get_rule_by_name(name: str = Body(..., embed=True)):
+    rule = await Rule.filter(name=name).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="规则不存在")
+    
+    # 返回所有参数字段
+    return {
+        "id": rule.id,
+        "name": rule.name,
+        "description": rule.description,
+        "rule_type": rule.rule_type,
+        "params": rule.params,  
+        "expected_result": rule.expected_result,
+        "baseline_standard": rule.baseline_standard,
+        "severity_level": rule.severity_level,
+        "created_at": rule.created_at.isoformat() if rule.created_at else None,
+        "risk_description": rule.risk_description,
+        "solution": rule.solution,
+        "tip": rule.tip
+    }
+
+
+# 获取最近一次任务ID接口
+@app.get("/last", tags=["Rules"])
+async def get_latest_task():
+    """通过created_at时间排序获取最新任务ID"""
+    latest_task = await Task.all().order_by("-created_at").first()
+    
+    if not latest_task:
+        raise HTTPException(status_code=404, detail="未找到任何任务记录")
+    
+    return {"task_id": latest_task.id}
+
+# 获取最近三次任务记录接口
+@app.get("/last-three", tags=["Rules"])
+async def get_last_three_tasks():
+    """获取最近三次检测任务记录"""
+    tasks = await Task.all().order_by("-created_at").limit(3)
+    
+    if not tasks:
+        raise HTTPException(status_code=404, detail="未找到任何任务记录")
+    
+    return [
+        {
+            "task_id": task.id,
+            "created_at": task.created_at.isoformat() if task.created_at else None,
+            "status": task.status,
+            "progress": task.progress,
+            "total": task.total
+        } for task in tasks
+    ]
 
 
 # ========== 其他接口 ==========
@@ -380,6 +469,59 @@ def get_login(credentials: dict = Body(...)):
         return JSONResponse(
             status_code=500,
             content={"detail": "配置文件不存在"}
+        )
+
+
+# 修改密码接口
+from pydantic import BaseModel
+
+class UpdatePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+@app.post("/update_password", tags=["Auth"])
+def update_password(request: UpdatePasswordRequest):
+    """POST接口修改密码，需提供原密码和新密码"""
+    config_path = os.path.join(os.path.dirname(__file__), "database", "config.json")
+    
+    try:
+        # 读取现有配置
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        
+        # 验证原密码
+        if config.get("password") != request.old_password:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "原密码验证失败"}
+            )
+        
+        # 更新密码
+        config["password"] = request.new_password
+        
+        # 写回文件
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=4)
+            
+        return JSONResponse(
+            status_code=200,
+            content={"success": True, "message": "密码更新成功"}
+        )
+        
+    except FileNotFoundError:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "配置文件不存在"}
+        )
+    except json.JSONDecodeError:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "配置文件格式错误"}
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"密码更新失败: {str(e)}"}
         )
 
 

@@ -130,39 +130,16 @@ async def get_history(
     history = await query.order_by("-timestamp").limit(limit).all()
     return {"success": True, "data": history}
 
-@router.get("/chart/{metric_name}")
-async def get_chart_data(
-    metric_name: str,
-    days: int = Query(7, ge=1, le=30)  # 支持查询1-30天数据
-):
-    """获取基线对比图表数据（用于前端展示）"""
+# 重新最新的五条信息
+@router.get("/latest/{metric_name}")
+async def get_latest_history(metric_name: str):
+    """获取指定指标的最新5条历史数据"""
     try:
-        # 查询时间范围数据
+        # 查询最新5条记录
         history = await BaselineHistory.filter(
-            metric_name=metric_name,
-            timestamp__gte=datetime.now() - timedelta(days=days)
-        ).order_by("timestamp").all()
+            metric_name=metric_name
+        ).order_by("-timestamp").limit(5).all()
         
-        if not history:
-            return {"success": True, "data": {"labels": [], "datasets": {}}}
-            
-        # 整理图表数据格式
-        labels = [h.timestamp.strftime("%Y-%m-%d %H:%M") for h in history]
-        datasets = {
-            "实际值": [h.value for h in history],
-            "基线值": [h.baseline for h in history],
-            "阈值上限": [h.threshold_high for h in history],
-            "阈值下限": [h.threshold_low for h in history]
-        }
-        anomalies = [i for i, h in enumerate(history) if h.is_anomaly]
-        
-        return {
-            "success": True,
-            "data": {
-                "labels": labels,
-                "datasets": datasets,
-                "anomalies": anomalies
-            }
-        }
+        return {"success": True, "data": history}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取图表数据失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"获取最新数据失败: {str(e)}")

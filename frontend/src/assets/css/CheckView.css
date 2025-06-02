@@ -136,7 +136,6 @@
 .risk-item {
     display: flex;
     align-items: center;
-    border-bottom: 1px solid #e4e7ed;
     padding: 1.2rem 0;
 }
 
