@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 
 // 状态概览数据
@@ -105,6 +105,10 @@ const lineChart = ref(null)
 // 检测记录数据
 const recentScans = ref([])
 
+// 定时器和图表实例
+const baselineTimer = ref(null)
+const baselineChart = ref(null)
+
 // 时间格式化函数
 function formatTime(isoString) {
   const date = new Date(isoString)
@@ -116,59 +120,10 @@ function formatTime(isoString) {
   return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
-onMounted(async () => {
+// 获取CPU基线数据并更新图表
+async function fetchCpuBaselineData() {
   try {
-    // 获取最近任务ID和状态概览数据
-    const lastRes = await fetch('http://127.0.0.1:8000/last')
-    if (!lastRes.ok) throw new Error('获取任务ID失败')
-    const lastData = await lastRes.json()
-    const taskId = lastData.task_id
-
-    // 获取进度数据
-    const progressRes = await fetch(`http://127.0.0.1:8000/scan/${taskId}/progress`)
-    if (!progressRes.ok) throw new Error('获取进度数据失败')
-    const progressData = await progressRes.json()
-
-    // 更新状态概览数据
-    total.value = progressData.total || 0
-    compliant.value = progressData.compliant_count || 0
-    warning.value = progressData.non_compliant_count || 0
-    failed.value = total.value - compliant.value - warning.value
-
-    // 获取非合规规则数据
-    const nonCompliantRes = await fetch(`http://127.0.0.1:8000/non-compliant-rules?task_id=${taskId}`)
-    if (!nonCompliantRes.ok) throw new Error('获取非合规规则失败')
-    const nonCompliantData = await nonCompliantRes.json()
-
-    // 提取风险统计数据
-    const highRisk = nonCompliantData.statistics.high_risk.count || 0
-    const mediumRisk = nonCompliantData.statistics.medium_risk.count || 0
-    const lowRisk = nonCompliantData.statistics.low_risk.count || 0
-
-    // 初始化漏洞级别占比饼图
-    const pieInstance = echarts.init(pieChart.value)
-    const pieOption = {
-      tooltip: { trigger: 'item' },
-      legend: { orient: 'vertical', right: 10 },
-      series: [
-        {
-          type: 'pie',
-          radius: '70%',
-          center: ['50%', '50%'],
-          data: [
-            { value: highRisk, name: '高危' },
-            { value: mediumRisk, name: '中危' },
-            { value: lowRisk, name: '低危' }
-          ],
-          emphasis: {
-            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
-          }
-        }
-      ]
-    }
-    pieInstance.setOption(pieOption)
-
-    // 新增：获取CPU使用率基线数据
+    // 获取CPU使用率基线数据
     const cpuBaselineRes = await fetch('http://localhost:8000/baseline/latest/cpu_usage')
     if (!cpuBaselineRes.ok) throw new Error('获取CPU基线数据失败')
     const cpuBaselineData = await cpuBaselineRes.json()
@@ -185,8 +140,12 @@ onMounted(async () => {
     const actualValues = processedData.map(item => item.actual)
     const baselineValues = processedData.map(item => item.baseline)
 
-    // 初始化动态基线状态折线图
-    const baselineChart = echarts.init(lineChart.value)
+    // 如果图表实例不存在则创建
+    if (!baselineChart.value && lineChart.value) {
+      baselineChart.value = echarts.init(lineChart.value)
+    }
+
+    // 创建图表配置
     const baselineOption = {
       tooltip: {
         trigger: 'axis',
@@ -247,7 +206,72 @@ onMounted(async () => {
         }
       ]
     }
-    baselineChart.setOption(baselineOption)
+
+    // 更新图表
+    baselineChart.value.setOption(baselineOption)
+
+  } catch (error) {
+    console.error('CPU基线数据获取异常:', error)
+  }
+}
+
+onMounted(async () => {
+  try {
+    // 获取最近任务ID和状态概览数据
+    const lastRes = await fetch('http://127.0.0.1:8000/last')
+    if (!lastRes.ok) throw new Error('获取任务ID失败')
+    const lastData = await lastRes.json()
+    const taskId = lastData.task_id
+
+    // 获取进度数据
+    const progressRes = await fetch(`http://127.0.0.1:8000/scan/${taskId}/progress`)
+    if (!progressRes.ok) throw new Error('获取进度数据失败')
+    const progressData = await progressRes.json()
+
+    // 更新状态概览数据
+    total.value = progressData.total || 0
+    compliant.value = progressData.compliant_count || 0
+    warning.value = progressData.non_compliant_count || 0
+    failed.value = total.value - compliant.value - warning.value
+
+    // 获取非合规规则数据
+    const nonCompliantRes = await fetch(`http://127.0.0.1:8000/non-compliant-rules?task_id=${taskId}`)
+    if (!nonCompliantRes.ok) throw new Error('获取非合规规则失败')
+    const nonCompliantData = await nonCompliantRes.json()
+
+    // 提取风险统计数据
+    const highRisk = nonCompliantData.statistics.high_risk.count || 0
+    const mediumRisk = nonCompliantData.statistics.medium_risk.count || 0
+    const lowRisk = nonCompliantData.statistics.low_risk.count || 0
+
+    // 初始化漏洞级别占比饼图
+    const pieInstance = echarts.init(pieChart.value)
+    const pieOption = {
+      tooltip: { trigger: 'item' },
+      legend: { orient: 'vertical', right: 10 },
+      series: [
+        {
+          type: 'pie',
+          radius: '70%',
+          center: ['50%', '50%'],
+          data: [
+            { value: highRisk, name: '高危' },
+            { value: mediumRisk, name: '中危' },
+            { value: lowRisk, name: '低危' }
+          ],
+          emphasis: {
+            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+          }
+        }
+      ]
+    }
+    pieInstance.setOption(pieOption)
+
+    // 首次获取CPU基线数据
+    await fetchCpuBaselineData()
+
+    // 设置定时器（每60秒执行一次）
+    baselineTimer.value = setInterval(fetchCpuBaselineData, 60000)
 
     // 获取最近三个任务数据
     const lastThreeRes = await fetch('http://127.0.0.1:8000/last-three')
@@ -275,6 +299,21 @@ onMounted(async () => {
 
   } catch (error) {
     console.error('数据获取异常:', error)
+  }
+})
+
+// 组件卸载时的清理工作
+onUnmounted(() => {
+  // 清除定时器
+  if (baselineTimer.value) {
+    clearInterval(baselineTimer.value)
+    baselineTimer.value = null
+  }
+
+  // 销毁图表实例
+  if (baselineChart.value) {
+    baselineChart.value.dispose()
+    baselineChart.value = null
   }
 })
 </script>

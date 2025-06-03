@@ -34,7 +34,7 @@
               </el-icon>
               <span class="icon-text-gap"></span>设置
             </template>
-            <el-menu-item index="/settings/threshold">阈值设置</el-menu-item>
+            <el-menu-item index="/settings/threshold">基线设置</el-menu-item>
             <el-menu-item index="/settings/password">密码修改</el-menu-item>
             <el-menu-item index="/settings/alert">告警设置</el-menu-item>
           </el-sub-menu>

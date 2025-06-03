@@ -55,7 +55,7 @@ async def collect_metrics():
                 logger.error(f"基线采集错误: {str(e)}")
             
             try:
-                await asyncio.sleep(3)  # 每30秒采集一次
+                await asyncio.sleep(30)  # 每30秒采集一次
             except asyncio.CancelledError:
                 logger.info("正在停止定时采集任务...")
                 # 清理模型缓存

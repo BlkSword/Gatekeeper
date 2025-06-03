@@ -143,3 +143,16 @@ async def get_latest_history(metric_name: str):
         return {"success": True, "data": history}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取最新数据失败: {str(e)}")
+    
+
+# 最新异常状态
+@router.get("/anomaly-timestamps/{metric_name}")
+async def get_anomaly_timestamps(metric_name: str):
+    try:
+        anomaly_records = await BaselineHistory.filter(
+            metric_name=metric_name
+        ).order_by("-timestamp").limit(10).values("timestamp", "is_anomaly")
+        
+        return {"success": True, "data": anomaly_records}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取异常时间戳失败: {str(e)}")

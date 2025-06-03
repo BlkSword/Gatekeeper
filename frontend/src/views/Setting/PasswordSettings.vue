@@ -1,6 +1,5 @@
 <template>
   <div class="settings-card">
-    <h2>修改密码</h2>
     <el-form ref="passwordFormRef" label-position="right" label-width="120px" :model="passwordForm"
       :rules="passwordRules">
       <el-form-item label="当前密码" prop="oldPassword">
@@ -122,5 +121,6 @@ async function submitPassword() {
   padding: 30px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-top: 220px;
 }
 </style>

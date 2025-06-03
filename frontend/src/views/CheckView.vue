@@ -1,35 +1,150 @@
 <template>
   <div class="full-container">
     <el-scrollbar style="height: 100vh;">
-      <!-- 页眉区域保持不变 -->
+      <!-- 页眉区域 -->
       <header class="header">
         <div class="button-group">
-          <button class="blue-button" @click="showReportDialog = true">查看报告</button>
           <button class="blue-button" @click="showRuleDialog = true">自定义规则</button>
-        </div>
-        <!-- 查看报告弹窗 -->
-        <div v-if="showReportDialog" class="custom-modal">
-          <div class="modal-content">
-            <div class="modal-header">
-              <span class="modal-title">查看报告</span>
-              <span class="modal-close" @click="showReportDialog = false">&times;</span>
-            </div>
-            <div class="modal-body">
-              <div class="svg-container"></div>
-              <p class="no-content">暂无内容</p>
-            </div>
-          </div>
         </div>
         <!-- 自定义规则弹窗 -->
         <div v-if="showRuleDialog" class="custom-modal">
-          <div class="modal-content">
+          <div class="modal-content" style="width: 800px;">
             <div class="modal-header">
-              <span class="modal-title">自定义规则</span>
-              <span class="modal-close" @click="showRuleDialog = false">&times;</span>
+              <span class="modal-title">新建规则</span>
+              <span class="modal-close" @click="closeRuleDialog">&times;</span>
             </div>
             <div class="modal-body">
-              <div class="svg-container"></div>
-              <p class="no-content">暂无内容</p>
+              <el-form ref="ruleFormRef" :model="ruleForm" label-width="120px" :rules="rules" label-position="right"
+                @submit.prevent>
+                <!-- 步骤条 -->
+                <el-steps :active="activeStep" finish-status="success" simple style="margin-bottom: 20px">
+                  <el-step title="基础信息"></el-step>
+                  <el-step title="参数设置"></el-step>
+                  <el-step title="基线信息"></el-step>
+                </el-steps>
+                <!-- 步骤内容 -->
+                <div class="step-content">
+                  <!-- 步骤一：基础信息 -->
+                  <div v-if="activeStep === 0" class="step-pane">
+                    <div class="form-section">
+                      <h3>基础信息</h3>
+                      <el-form-item label="规则名称" prop="name">
+                        <el-input v-model="ruleForm.name" />
+                      </el-form-item>
+                      <el-form-item label="描述" prop="description">
+                        <el-input v-model="ruleForm.description" type="textarea" :rows="2" />
+                      </el-form-item>
+                      <el-form-item label="规则类型" prop="rule_type">
+                        <el-select v-model="ruleForm.rule_type" placeholder="请选择规则类型" @change="handleRuleTypeChange">
+                          <el-option label="命令规则" value="command" />
+                          <el-option label="注册表规则" value="service" />
+                          <el-option label="文件规则" value="file" />
+                          <el-option label="脚本检测" value="python_script" />
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="严重等级" prop="severity_level">
+                        <el-select v-model="ruleForm.severity_level" placeholder="请选择严重等级">
+                          <el-option label="高危" value="high" />
+                          <el-option label="中危" value="medium" />
+                          <el-option label="低危" value="low" />
+                        </el-select>
+                      </el-form-item>
+                    </div>
+                  </div>
+                  <!-- 步骤二：参数设置 -->
+                  <div v-if="activeStep === 1 && ruleForm.rule_type" class="step-pane">
+                    <div class="form-section">
+                      <h3>参数设置</h3>
+                      <!-- 命令规则参数 -->
+                      <div v-if="ruleForm.rule_type === 'command'">
+                        <el-form-item label="命令" prop="params.command">
+                          <el-input v-model="ruleForm.params.command" />
+                        </el-form-item>
+                        <el-form-item label="必须包含" prop="expected_result.must_contain">
+                          <el-input v-model="ruleForm.expected_result.must_contain" />
+                        </el-form-item>
+                        <el-form-item label="禁止包含" prop="expected_result.must_not_contain">
+                          <el-input v-model="ruleForm.expected_result.must_not_contain" />
+                        </el-form-item>
+                      </div>
+                      <!-- 注册表规则参数 -->
+                      <div v-else-if="ruleForm.rule_type === 'service'">
+                        <el-form-item label="注册表项" prop="params.hive">
+                          <el-select v-model="ruleForm.params.hive" placeholder="请选择注册表项">
+                            <el-option label="HKEY_LOCAL_MACHINE" value="HKEY_LOCAL_MACHINE" />
+                            <el-option label="HKEY_CURRENT_USER" value="HKEY_CURRENT_USER" />
+                          </el-select>
+                        </el-form-item>
+                        <el-form-item label="键路径" prop="params.key">
+                          <el-input v-model="ruleForm.params.key" />
+                        </el-form-item>
+                        <el-form-item label="值名称" prop="params.value_name">
+                          <el-input v-model="ruleForm.params.value_name" />
+                        </el-form-item>
+                        <el-form-item label="预期值" prop="expected_result.expected_value">
+                          <el-input v-model="ruleForm.expected_result.expected_value" />
+                        </el-form-item>
+                      </div>
+                      <!-- 文件规则参数 -->
+                      <div v-else-if="ruleForm.rule_type === 'file'">
+                        <el-form-item label="文件路径" prop="params.path">
+                          <el-input v-model="ruleForm.params.path" />
+                        </el-form-item>
+                        <el-form-item label="哈希类型" prop="params.hash_type">
+                          <el-select v-model="ruleForm.params.hash_type" placeholder="请选择哈希类型">
+                            <el-option label="MD5" value="md5" />
+                            <el-option label="SHA1" value="sha1" />
+                            <el-option label="SHA256" value="sha256" />
+                          </el-select>
+                        </el-form-item>
+                        <el-form-item label="预期哈希" prop="expected_result.expected_hash">
+                          <el-input v-model="ruleForm.expected_result.expected_hash" />
+                        </el-form-item>
+                      </div>
+                      <!-- 脚本检测参数 -->
+                      <div v-else-if="ruleForm.rule_type === 'python_script'">
+                        <el-form-item label="脚本路径" prop="params.script_path">
+                          <el-input v-model="ruleForm.params.script_path" />
+                        </el-form-item>
+                        <el-form-item label="预期状态" prop="expected_result.status">
+                          <el-select v-model="ruleForm.expected_result.status" placeholder="请选择预期状态">
+                            <el-option label="成功" :value="true" />
+                            <el-option label="失败" :value="false" />
+                          </el-select>
+                        </el-form-item>
+                        <el-form-item label="预期消息" prop="expected_result.message">
+                          <el-input v-model="ruleForm.expected_result.message" />
+                        </el-form-item>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 步骤三：基线信息 -->
+                  <div v-if="activeStep === 2" class="step-pane">
+                    <div class="form-section">
+                      <h3>基线信息</h3>
+                      <el-form-item label="基线标准" prop="baseline_standard">
+                        <el-input v-model="ruleForm.baseline_standard" type="textarea" :rows="2" />
+                      </el-form-item>
+                      <el-form-item label="风险描述" prop="risk_description">
+                        <el-input v-model="ruleForm.risk_description" type="textarea" :rows="3" />
+                      </el-form-item>
+                      <el-form-item label="解决方案" prop="solution">
+                        <el-input v-model="ruleForm.solution" type="textarea" :rows="3" />
+                      </el-form-item>
+                      <el-form-item label="温馨提示" prop="tip">
+                        <el-input v-model="ruleForm.tip" type="textarea" :rows="2" />
+                      </el-form-item>
+                    </div>
+                  </div>
+                </div>
+                <!-- 步骤按钮 -->
+                <div class="modal-footer">
+                  <button v-if="activeStep > 0" class="gray-button" @click="prevStep">上一步</button>
+                  <button v-if="activeStep < 2" class="blue-button" @click="nextStep">下一步</button>
+                  <button v-else class="blue-button" @click="submitRule">提交规则</button>
+                  <button class="gray-button" @click="closeRuleDialog">取消</button>
+                </div>
+              </el-form>
             </div>
           </div>
         </div>
@@ -54,7 +169,7 @@
           </div>
         </div>
         <!-- 风险列表 -->
-        <div class="risk-list">
+        <div class="risk-list" ref="riskListContainer">
           <div class="risk-header">
             <label>
               <input type="checkbox" v-model="selectAll">
@@ -65,11 +180,13 @@
           <div v-if="risks.length === 0 && !isLoading" class="empty-state">
             暂无风险数据，请先进行安全检查
           </div>
+          <!-- 加载中状态 -->
           <div v-else-if="isLoading" class="empty-state">
-            <div class="loading-spinner"></div>
-            正在扫描中...
+            <!-- 区域加载动画 -->
+            <el-loading :visible="isLoading" :text="'正在扫描中...'" :spinner="'el-icon-loading'"
+              :background="'rgba(255, 255, 255, 0.7)'" />
           </div>
-          <!-- 使用 transition 包裹风险项 -->
+          <!-- 风险项 -->
           <transition-group name="fade">
             <div v-for="(risk, index) in risks" :key="risk.title" class="risk-item" v-show="!risk.ignored">
               <div class="risk-checkbox">
@@ -119,7 +236,9 @@
     </el-scrollbar>
   </div>
 </template>
+
 <script>
+import { ElMessage, ElLoading } from 'element-plus';
 import * as echarts from 'echarts';
 import axios from 'axios';
 
@@ -154,8 +273,45 @@ export default {
       totalItems: 0,
       compliantCount: 0,
       nonCompliantCount: 0,
-      // 添加缓存相关数据
-      hasCachedData: false
+      // 新增步骤状态
+      activeStep: 0,
+      // 新增规则表单数据
+      ruleForm: {
+        name: '',
+        description: '',
+        rule_type: '',
+        severity_level: 'high',
+        params: {},
+        expected_result: {},
+        baseline_standard: '',
+        risk_description: '',
+        solution: '',
+        tip: ''
+      },
+      // 表单验证规则
+      rules: {
+        name: [{ required: true, message: '请输入规则名称', trigger: 'blur' }],
+        description: [{ required: true, message: '请输入描述', trigger: 'blur' }],
+        rule_type: [{ required: true, message: '请选择规则类型', trigger: 'change' }],
+        severity_level: [{ required: true, message: '请选择严重等级', trigger: 'change' }],
+        'params.command': [{ required: true, message: '请输入命令', trigger: 'blur' }],
+        'expected_result.must_contain': [{ required: true, message: '请输入必须包含的内容', trigger: 'blur' }],
+        'params.hive': [{ required: true, message: '请选择注册表项', trigger: 'change' }],
+        'params.key': [{ required: true, message: '请输入键路径', trigger: 'blur' }],
+        'params.value_name': [{ required: true, message: '请输入值名称', trigger: 'blur' }],
+        'expected_result.expected_value': [{ required: true, message: '请输入预期值', trigger: 'blur' }],
+        'params.path': [{ required: true, message: '请输入文件路径', trigger: 'blur' }],
+        'params.hash_type': [{ required: true, message: '请选择哈希类型', trigger: 'change' }],
+        'expected_result.expected_hash': [{ required: true, message: '请输入预期哈希值', trigger: 'blur' }],
+        'params.script_path': [{ required: true, message: '请输入脚本路径', trigger: 'blur' }],
+        'expected_result.status': [{ required: true, message: '请选择预期状态', trigger: 'change' }],
+        'expected_result.message': [{ required: true, message: '请输入预期消息', trigger: 'blur' }],
+        baseline_standard: [{ required: true, message: '请输入基线标准', trigger: 'blur' }],
+        risk_description: [{ required: true, message: '请输入风险描述', trigger: 'blur' }],
+        solution: [{ required: true, message: '请输入解决方案', trigger: 'blur' }],
+        tip: [{ required: true, message: '请输入温馨提示', trigger: 'blur' }]
+      },
+      loadingInstance: null
     };
   },
   computed: {
@@ -164,7 +320,7 @@ export default {
     },
     scanStatusText() {
       return this.isScanned
-        ? `已完成安全检查，已检测到${this.riskCount} 个风险`
+        ? `已完成安全检查，已检测到${this.riskCount}个风险`
         : '尚未进行安全检查';
     },
     scanTimeText() {
@@ -197,6 +353,9 @@ export default {
     }
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
+    }
+    if (this.loadingInstance) {
+      this.loadingInstance.close();
     }
   },
   methods: {
@@ -244,29 +403,31 @@ export default {
     },
     async startScan() {
       if (this.isLoading) return;
-
       // 如果已有缓存数据且不是强制刷新，直接使用缓存
       if (this.hasCachedData && !confirm('是否重新扫描以获取最新数据？')) {
         return;
       }
-
       this.isLoading = true;
       this.isScanned = false;
       this.risks = [];
       this.hasCachedData = false;
-
+      // 创建区域加载动画
+      this.loadingInstance = this.$loading({
+        target: this.$refs.riskListContainer,
+        text: '正在扫描中...',
+        spinner: 'el-icon-loading',
+        background: 'rgba(255, 255, 255, 0.7)',
+        lock: true
+      });
       try {
         // 清除旧缓存
         localStorage.removeItem(SCAN_CACHE_KEY);
-
         // 启动扫描任务
         const taskResponse = await axios.post('http://127.0.0.1:8000/scan');
         this.taskId = taskResponse.data.task_id;
-
         // 获取规则列表
         const rulesResponse = await axios.get('http://127.0.0.1:8000/rules');
         this.rules = rulesResponse.data;
-
         // 开始轮询进度
         this.pollingInterval = setInterval(async () => {
           try {
@@ -274,21 +435,16 @@ export default {
             if (progressResponse.data.status === 'completed') {
               clearInterval(this.pollingInterval);
               this.pollingInterval = null;
-
               // 更新进度数据
               this.totalItems = progressResponse.data.total;
               this.compliantCount = progressResponse.data.compliant_count;
               this.nonCompliantCount = progressResponse.data.non_compliant_count;
-
               // 计算得分
               this.score = Math.round((this.compliantCount / this.totalItems) * 100);
-
               // 获取扫描结果
               const resultsResponse = await axios.get(`http://127.0.0.1:8000/scan/${this.taskId}/results`);
-
               // 处理非合规结果
               const nonCompliantResults = resultsResponse.data.filter(item => !item.compliant);
-
               // 匹配规则信息生成风险列表
               this.risks = nonCompliantResults.map(result => {
                 const rule = this.rules.find(r => r.name === result.rule_name);
@@ -302,27 +458,30 @@ export default {
                   ignored: false
                 };
               });
-
               this.riskCount = this.risks.length;
               this.lastScanTime = new Date().toLocaleString();
               this.isScanned = true;
               this.isLoading = false;
-
               // 保存缓存
               this.saveCachedData();
-
               this.$nextTick(() => {
                 this.initChart();
               });
+              this.loadingInstance.close();
+              this.loadingInstance = null;
             }
           } catch (error) {
             console.error('轮询进度失败:', error);
             this.handleError('扫描过程中发生错误');
+            this.loadingInstance.close();
+            this.loadingInstance = null;
           }
         }, 2000); // 每2秒轮询一次
       } catch (error) {
         console.error('启动扫描任务失败:', error);
         this.handleError('无法启动扫描任务');
+        this.loadingInstance.close();
+        this.loadingInstance = null;
       }
     },
     formatSeverityLevel(level) {
@@ -445,7 +604,101 @@ export default {
       this.isScanned = false;
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
-      alert(message);
+      ElMessage.error({
+        message: message,
+        duration: 3000,
+        center: true
+      });
+      if (this.loadingInstance) {
+        this.loadingInstance.close();
+        this.loadingInstance = null;
+      }
+    },
+    // 规则类型切换处理
+    handleRuleTypeChange(val) {
+      // 清空参数和预期结果
+      this.ruleForm.params = {};
+      this.ruleForm.expected_result = {};
+      // 初始化特定规则参数
+      if (val === 'command') {
+        this.ruleForm.params.command = '';
+        this.ruleForm.expected_result.must_contain = '';
+        this.ruleForm.expected_result.must_not_contain = '';
+      } else if (val === 'service') {
+        this.ruleForm.params.hive = 'HKEY_LOCAL_MACHINE';
+        this.ruleForm.params.key = '';
+        this.ruleForm.params.value_name = '';
+        this.ruleForm.expected_result.expected_value = '';
+      } else if (val === 'file') {
+        this.ruleForm.params.path = '';
+        this.ruleForm.params.hash_type = 'md5';
+        this.ruleForm.expected_result.expected_hash = '';
+      } else if (val === 'python_script') {
+        this.ruleForm.params.script_path = '';
+        this.ruleForm.expected_result.status = true;
+        this.ruleForm.expected_result.message = '';
+      }
+    },
+    // 关闭规则弹窗
+    closeRuleDialog() {
+      this.showRuleDialog = false;
+      this.activeStep = 0;
+      this.$refs.ruleFormRef.resetFields();
+    },
+    // 上一步
+    prevStep() {
+      if (this.activeStep > 0) {
+        this.activeStep--;
+      }
+    },
+    // 下一步
+    nextStep() {
+      if (this.activeStep === 0) {
+        this.$refs.ruleFormRef.validateField(['name', 'description', 'rule_type'], (valid, invalidFields) => {
+          if (valid) {
+            this.activeStep++;
+          } else {
+            // 添加错误提示并保持弹窗打开
+            Object.values(invalidFields).forEach(errors => {
+              errors.forEach(error => {
+                this.$message.error(error.message);
+              });
+            });
+          }
+        });
+      } else if (this.activeStep === 1) {
+        // 根据rule_type验证参数字段
+        let fieldsToValidate = [];
+        if (this.ruleForm.rule_type === 'command') {
+          fieldsToValidate = ['params.command', 'expected_result.must_contain', 'expected_result.must_not_contain'];
+        } else if (this.ruleForm.rule_type === 'service') {
+          fieldsToValidate = ['params.hive', 'params.key', 'params.value_name', 'expected_result.expected_value'];
+        } else if (this.ruleForm.rule_type === 'file') {
+          fieldsToValidate = ['params.path', 'params.hash_type', 'expected_result.expected_hash'];
+        } else if (this.ruleForm.rule_type === 'python_script') {
+          fieldsToValidate = ['params.script_path', 'expected_result.status', 'expected_result.message'];
+        }
+        this.$refs.ruleFormRef.validateField(fieldsToValidate, (valid) => {
+          if (valid) {
+            this.activeStep++;
+          }
+        });
+      }
+    },
+    // 提交规则
+    async submitRule() {
+      try {
+        await this.$refs.ruleFormRef.validate();
+        // 提交规则到后端
+        const response = await axios.post('http://127.0.0.1:8000/rules', this.ruleForm);
+        if (response.status === 201) {
+          this.$message.success('规则创建成功');
+          this.closeRuleDialog();
+        }
+      } catch (error) {
+        this.$message.error('规则创建失败');
+        console.error('创建规则失败:', error);
+      }
     }
   },
   watch: {
@@ -453,38 +706,14 @@ export default {
       if (this.chartInstance && newVal !== oldVal) {
         this.updateChartColor();
       }
+    },
+    isLoading(newVal) {
+      if (!newVal && this.loadingInstance) {
+        this.loadingInstance.close();
+        this.loadingInstance = null;
+      }
     }
   }
 };
 </script>
-<style scoped src="../assets/css/CheckView.css"></style>
-<!-- 添加的动画样式 -->
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  border-top-color: transparent;
-  animation: spin 1s linear infinite;
-  margin-right: 8px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>
+<style scoped src="../../src/assets/css/CheckView.css"></style>

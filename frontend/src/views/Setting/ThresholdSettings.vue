@@ -1,6 +1,5 @@
 <template>
   <div class="settings-card">
-    <h2>动态基线设置</h2>
     <el-form label-position="right" label-width="150px">
       <!-- 动态基线开关 -->
       <el-form-item label="动态基线启用">
@@ -101,5 +100,6 @@ function saveConfig() {
   padding: 30px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-top: 220px;
 }
 </style>
