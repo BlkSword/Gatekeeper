@@ -276,6 +276,7 @@
     color: #555;
     white-space: pre-wrap;
     word-break: break-word;
+    text-align: left;
 }
 
 /* 弹窗样式 */

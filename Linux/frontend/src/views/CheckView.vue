@@ -161,8 +161,6 @@
             <p style="color:dimgray">{{ scanTimeText }}</p>
           </div>
           <div style="margin-right: 3rem; align-self: center;">
-            <span class="fix-link" @click="handleFixSelected" :class="{ 'disabled': selectedCount === 0 }"
-              v-show="selectedCount > 0">修复选中项</span>
             <button class="scan-button" @click="startScan" :disabled="isLoading">
               {{ isLoading ? '扫描中...' : '立即检查' }}
             </button>
@@ -171,10 +169,7 @@
         <!-- 风险列表 -->
         <div class="risk-list" ref="riskListContainer">
           <div class="risk-header">
-            <label>
-              <input type="checkbox" v-model="selectAll">
-              <span class="cleckbox-label">全选</span>
-            </label>
+            <!-- 移除了全选复选框 -->
           </div>
           <!-- 空状态提示 -->
           <div v-if="risks.length === 0 && !isLoading" class="empty-state">
@@ -189,9 +184,6 @@
           <!-- 风险项 -->
           <transition-group name="fade">
             <div v-for="(risk, index) in risks" :key="risk.title" class="risk-item" v-show="!risk.ignored">
-              <div class="risk-checkbox">
-                <input type="checkbox" v-model="risk.selected" :disabled="!isScanned">
-              </div>
               <div class="risk-details">
                 <div class="risk-header">
                   <span class="risk-level" :style="{
@@ -202,7 +194,6 @@
                 </div>
               </div>
               <div class="risk-actions">
-                <button class="risk-button" @click="handleAction(index, '修复')" :disabled="!isScanned">修复</button>
                 <button class="risk-button" @click="handleAction(index, '忽略')" :disabled="!isScanned">忽略</button>
                 <button class="risk-button" @click="handleAction(index, '详情')" :disabled="!isScanned">详情</button>
               </div>
@@ -315,9 +306,6 @@ export default {
     };
   },
   computed: {
-    selectedCount() {
-      return this.risks.filter(risk => risk.selected).length;
-    },
     scanStatusText() {
       return this.isScanned
         ? `已完成安全检查，已检测到${this.riskCount}个风险`
@@ -327,17 +315,6 @@ export default {
       return this.isScanned
         ? `上次检查时间：${this.lastScanTime}`
         : '点击右侧按钮开始首次检查';
-    },
-    selectAll: {
-      get() {
-        if (this.risks.length === 0) return false;
-        return this.risks.every(risk => risk.selected);
-      },
-      set(newSelection) {
-        this.risks.forEach(risk => {
-          risk.selected = newSelection;
-        });
-      }
     }
   },
   mounted() {
@@ -454,7 +431,6 @@ export default {
                   description: rule?.risk_description || '暂无描述',
                   solution: rule?.solution || '暂无解决方案',
                   tip: rule?.tip || '暂无提示',
-                  selected: false,
                   ignored: false
                 };
               });
@@ -492,15 +468,6 @@ export default {
         default: return '未检测';
       }
     },
-    handleFixSelected() {
-      if (this.selectedCount) {
-        this.risks
-          .filter(risk => risk.selected)
-          .forEach((risk, index) => {
-            this.handleAction(index, '修复');
-          });
-      }
-    },
     handleAction(riskIndex, action) {
       const risk = this.risks[riskIndex];
       if (action === '详情') {
@@ -508,8 +475,6 @@ export default {
         this.selectedRisk = { ...risk };
       } else if (action === '忽略') {
         risk.ignored = true;
-      } else {
-        console.log(`处理风险 ${riskIndex} 的操作：${action}`);
       }
     },
     initChart() {
@@ -691,7 +656,7 @@ export default {
         await this.$refs.ruleFormRef.validate();
         // 提交规则到后端
         const response = await axios.post('http://127.0.0.1:8000/rules', this.ruleForm);
-        if (response.status === 201) {
+        if (response.status === 200) {
           this.$message.success('规则创建成功');
           this.closeRuleDialog();
         }
@@ -716,4 +681,5 @@ export default {
   }
 };
 </script>
+
 <style scoped src="../../src/assets/css/CheckView.css"></style>

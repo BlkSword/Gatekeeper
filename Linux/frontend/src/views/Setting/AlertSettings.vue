@@ -26,6 +26,7 @@
 
       <el-form-item>
         <el-button type="primary" @click="saveSettings">保存设置</el-button>
+        <el-button type="primary" @click="Test">测试</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -33,7 +34,7 @@
 
 <script setup>
 import { reactive } from 'vue'
-import { ElMessage, ElMessageBox, ElDivider } from 'element-plus'
+import { ElMessage, ElMessageBox, ElDivider, ElLoading } from 'element-plus'
 import axios from 'axios'
 
 // 创建axios实例
@@ -111,6 +112,38 @@ async function saveSettings() {
     console.error('保存配置失败:', error)
   }
 }
+
+// 测试告警服务连接
+async function Test() {
+  // 创建加载层
+  const loadingInstance = ElLoading.service({
+    lock: true,
+    text: '正在测试告警服务...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  })
+
+  try {
+    const response = await apiClient.get('/alert_service')
+
+    if (response.data?.success) {
+      ElMessage.success('测试成功！服务正常')
+    } else {
+      ElMessage.error(`测试失败: ${response.data?.message || '未知错误'}`)
+    }
+  } catch (error) {
+    // 网络错误提示
+    const errorMsg = error.response?.status
+      ? `HTTP ${error.response.status} - ${error.message}`
+      : error.message
+
+    ElMessage.error(`网络异常: ${errorMsg}`)
+    console.error('测试告警服务失败:', error)
+  } finally {
+    // 确保无论成功与否都关闭加载层
+    loadingInstance.close()
+  }
+}
+
 </script>
 
 <style scoped>

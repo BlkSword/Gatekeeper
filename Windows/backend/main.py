@@ -425,6 +425,12 @@ async def update_threshold(threshold: int = Query(..., description="新的阈值
             status_code=500,
             content={"detail": f"配置更新失败: {str(e)}"}
         )
+    
+@app.get("/alert_service",tags=["Alert"])
+def alert_service():
+    return send_email_alert()
+
+
 
 # ========== 规则检测层 ==========
 
@@ -720,6 +726,7 @@ def update_password(request: UpdatePasswordRequest):
             status_code=500,
             content={"detail": f"密码更新失败: {str(e)}"}
         )
+
 
 
 
