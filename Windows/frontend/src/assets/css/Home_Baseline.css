@@ -1,0 +1,47 @@
+.full-container {
+    height: 100vh;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.status-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-content {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+}
+
+.card-content .info p {
+    margin: 0;
+    color: #000000;
+    margin-bottom: 20px;
+}
+
+.card-content h3 {
+    margin: 0;
+    font-size: 30px;
+}
+
+.main-content {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+}
+
+.chart {
+    height: 350px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}

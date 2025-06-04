@@ -1,0 +1,7 @@
+fastapi>=0.68.0
+psutil>=5.8.0
+python-multipart>=0.0.5
+uvicorn>=0.15.0
+pywin32>=306 ; sys_platform == 'win32'
+wmi>=1.5.1
+win32api ; sys_platform == 'win32'

@@ -1,0 +1,47 @@
+.full-container {
+    height: 100vh;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.full-height-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.status-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.metric-item {
+    text-align: center;
+}
+
+
+/* 卡片标题样式 */
+.card-header {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.network-info {
+    height: 350px;
+    overflow-y: auto;
+}
+
+.network-stats {
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.chart {
+    height: 350px;
+    width: 100%;
+}

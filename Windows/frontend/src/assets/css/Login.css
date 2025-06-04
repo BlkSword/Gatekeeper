@@ -1,0 +1,73 @@
+/* 登录页面整体容器样式 */
+.login-container {
+    height: 95vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 登录卡片主体样式 */
+.login-card {
+    width: 25%;
+    padding: 30px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: auto;
+}
+
+/* 头部标题区域布局 */
+.login-header {
+    margin-bottom: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 左侧标题样式 */
+.login-title-left {
+    font-size: 20px;
+    color: #626161;
+}
+
+/* 右侧产品名称样式 */
+.login-title-right {
+    font-size: 20px;
+    color: #409EFF;
+    font-weight: bold;
+}
+
+/* 表单区域样式 */
+.login-form .el-form-item {
+    margin-bottom: 20px;
+}
+
+.login-form .el-input {
+    width: 100%;
+}
+
+/* 底部区域样式 */
+.login-links {
+    margin-top: 10px;
+    font-size: 12px;
+    text-align: right;
+}
+
+/* 链接文本样式 */
+.link-right {
+    color: #409eff;
+    text-decoration: none;
+}
+
+/* 链接悬停效果 */
+.link-right:hover {
+    text-decoration: underline;
+}
+
+.popover-content {
+    text-align: center;
+    width: 100%;
+}
