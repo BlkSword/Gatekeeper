@@ -1,9 +1,10 @@
-# 获取进程和服务状态信息
-# 检测内容有：关键服务状态（显示名称/状态/PID/可执行路径）、已安装程序列表
+# 获取服务状态
+# 检测内容有：进程和服务状态、已安装程序列表、服务详细信息、关键服务状态、系统配置信息
 
 import subprocess
-from fastapi import logger
-import winreg
+import psutil
+import platform
+from datetime import datetime
 
 def get_process_info():
     """获取进程和服务状态信息"""
@@ -11,90 +12,131 @@ def get_process_info():
     # 获取关键服务状态
     def get_services():
         try:
-            output = subprocess.check_output(
-                'sc queryex type= service state= all', 
+            list_output = subprocess.check_output(
+                'systemctl list-units --type=service --all --no-pager --no-legend',
                 shell=True,
                 stderr=subprocess.STDOUT,
-                encoding='gbk'
+                encoding='utf-8'
             )
-            
             services = []
-            current_svc = {}
-            for line in output.split('\n'):
+            for line in list_output.split('\n'):
                 line = line.strip()
-                if line.startswith('SERVICE_NAME'):
-                    if current_svc.get('display_name'):
-                        services.append(current_svc)
-                    current_svc = {'name': line.split(':', 1)[1].strip()}
-                elif line.startswith('DISPLAY_NAME'):
-                    current_svc['display_name'] = line.split(':', 1)[1].strip()
-                elif line.startswith('STATE'):
-                    state = line.split(':', 1)[1].strip().split()[0]
-                    current_svc['state'] = '运行中' if state == '4' else '已停止'
-                elif line.startswith('WIN32_PID'):
-                    pid_str = line.split(':', 1)[1].strip()
-                    current_svc['pid'] = int(pid_str) if pid_str.isdigit() else None
-            
-            # 获取服务可执行文件路径
-            for svc in services:
+                if not line:
+                    continue
+                parts = line.split()
+                if len(parts) < 4:
+                    continue
+                svc_name = parts[0]
+                active_state = parts[2]
+                description = ' '.join(parts[4:]) if len(parts) > 4 else ''
+
                 try:
-                    qc_output = subprocess.check_output(
-                        f'sc qc "{svc["name"]}"',
+                    show_output = subprocess.check_output(
+                        f'systemctl show {svc_name} --property=Description,MainPID,ExecStart',
                         shell=True,
                         stderr=subprocess.STDOUT,
-                        encoding='gbk'
+                        encoding='utf-8'
                     )
-                    for qc_line in qc_output.split('\n'):
-                        qc_line = qc_line.strip()
-                        if qc_line.startswith('BINARY_PATH_NAME'):
-                            path = qc_line.split(':', 1)[1].strip()
-                            svc['executable_path'] = path
-                            break
-                    else:
-                        svc['executable_path'] = '未知路径'
+                    details = {}
+                    for detail_line in show_output.split('\n'):
+                        if '=' in detail_line:
+                            key, val = detail_line.split('=', 1)
+                            details[key.strip()] = val.strip()
+
+                    # 提取可执行路径
+                    exec_start = details.get('ExecStart', '')
+                    executable_path = exec_start.split()[0] if exec_start else '未知路径'
+
+                    # 提取PID
+                    pid_str = details.get('MainPID', '0')
+                    pid = int(pid_str) if pid_str.isdigit() else None
+
+                    services.append({
+                        "name": svc_name,
+                        "display_name": details.get('Description', description),
+                        "state": "运行中" if active_state == "active" else "已停止",
+                        "pid": pid,
+                        "executable_path": executable_path
+                    })
                 except Exception as e:
-                    svc['executable_path'] = '获取失败'
-            
-            return [s for s in services if s.get('display_name') and 'Windows' in s.get('display_name', '')]
+                    services.append({
+                        "name": svc_name,
+                        "display_name": description,
+                        "state": "运行中" if active_state == "active" else "已停止",
+                        "pid": None,
+                        "executable_path": "获取失败"
+                    })
+            # 过滤系统关键服务
+            return [s for s in services if 'systemd' in s.get('name', '') or 'network' in s.get('name', '')]
         except Exception as e:
-            return {"error": str(e)}
+            return {"error": f"获取服务失败：{str(e)}"}
 
     # 获取已安装程序列表
     def get_installed_programs():
         try:
             programs = []
-            reg_paths = [
-                r'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
-                r'SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
-            ]
-            
-            for path in reg_paths:
-                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path)
-                for i in range(0, winreg.QueryInfoKey(key)[0]):
-                    subkey_name = winreg.EnumKey(key, i)
-                    with winreg.OpenKey(key, subkey_name) as subkey:
+            os_release = platform.freedesktop_os_release()
+            distro_id = os_release.get('ID', '').lower()
+
+            if distro_id in ['debian', 'ubuntu']:
+                dpkg_output = subprocess.check_output(
+                    "dpkg-query -W -f='${Package}\t${Version}\t${Installed-Time}\n'",
+                    shell=True,
+                    stderr=subprocess.STDOUT,
+                    encoding='utf-8'
+                )
+                for line in dpkg_output.split('\n'):
+                    line = line.strip()
+                    if line:
                         try:
-                            name = winreg.QueryValueEx(subkey, 'DisplayName')[0]
-                            version = winreg.QueryValueEx(subkey, 'DisplayVersion')[0]
+                            name, version, install_time = line.split('\t')
                             install_date = "未知"
-                            try:
-                                install_date = winreg.QueryValueEx(subkey, 'InstallDate')[0]
-                            except OSError:
-                                pass
-                                
+                            if install_time.isdigit():
+                                install_date = datetime.fromtimestamp(int(install_time)).strftime('%Y-%m-%d')
                             programs.append({
                                 "name": name,
                                 "version": version,
-                                "install_date": install_date  
+                                "install_date": install_date
                             })
-                        except OSError:
+                        except ValueError:
                             continue
+            elif distro_id in ['rhel', 'centos', 'fedora']:
+                rpm_output = subprocess.check_output(
+                    "rpm -qa --queryformat '%{NAME},%{VERSION},%{INSTALLTIME}\n'",
+                    shell=True,
+                    stderr=subprocess.STDOUT,
+                    encoding='utf-8'
+                )
+                for line in rpm_output.split('\n'):
+                    line = line.strip()
+                    if line:
+                        try:
+                            name, version, install_time = line.split(',', 2)
+                            install_date = "未知"
+                            if install_time.isdigit():
+                                install_date = datetime.fromtimestamp(int(install_time)).strftime('%Y-%m-%d')
+                            programs.append({
+                                "name": name,
+                                "version": version,
+                                "install_date": install_date
+                            })
+                        except ValueError:
+                            continue
+            else:
+                return {"error": f"不支持的Linux发行版: {distro_id}"}
             return programs
         except Exception as e:
-            logger.error(f"Failed to get installed programs: {str(e)}")
-            return {"error": str(e)}
+            return {"error": f"获取已安装程序失败：{str(e)}"}
+
+    # 获取系统运行时间
+    boot_time = psutil.boot_time()
+    uptime_seconds = psutil.time.time() - boot_time
+    uptime_days = int(uptime_seconds // 86400)
+    uptime_hours = int((uptime_seconds % 86400) // 3600)
+    uptime_str = f"{uptime_days}天{uptime_hours}小时" if uptime_days > 0 else f"{uptime_hours}小时{int((uptime_seconds % 3600) // 60)}分钟"
 
     return {
         "critical_services": get_services(),
-        "installed_programs": get_installed_programs()
+        "installed_programs": get_installed_programs(),
+        "system_uptime": uptime_str
     }

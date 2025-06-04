@@ -1,17 +1,17 @@
 # 网卡流量监控
 
+
 import psutil
 from fastapi.logger import logger
 import threading
 import time
 
-# 全局状态存储
 _network_stats = {
     'last_time': None,
     'last_upload': 0,        
     'last_download': 0,      
 }
-_history_lock = threading.Lock()  # 线程锁
+_history_lock = threading.Lock()
 
 def get_system_traffic():
     """检测实时网络流量（上行/下行）"""
@@ -37,7 +37,6 @@ def get_system_traffic():
                     upload_speed_kb = upload_diff / (time_diff * 1024)
                     download_speed_kb = download_diff / (time_diff * 1024)
                     
-                    # 格式化结果
                     upload_speed = f"{upload_speed_mb:.6f} MB/s ({upload_speed_kb:.2f} KB/s)"
                     download_speed = f"{download_speed_mb:.6f} MB/s ({download_speed_kb:.2f} KB/s)"
             
@@ -46,7 +45,6 @@ def get_system_traffic():
             _network_stats['last_upload'] = network_io.bytes_sent
             _network_stats['last_download'] = network_io.bytes_recv
 
-        # 获取当前时间
         current_time_formatted = time.strftime("%H:%M:%S", time.localtime())
         
         result = {

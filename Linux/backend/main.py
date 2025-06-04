@@ -28,7 +28,7 @@ from rules.schemas import RuleCreate, RuleUpdate
 from rules.rules_executor import run_security_checks
 
 # 系统模块导入
-from system.system_status import check_system_status
+from system.system_status import check_internet
 from system.system_network import get_network_status
 from system.system_process import get_process_info
 from system.system_running import get_running_processes
@@ -178,7 +178,7 @@ def health_check():
 # 获取系统使用情况
 @app.get("/system_status", tags=["System"])
 def system_status():
-    return check_system_status()
+    return check_internet()
 
 # 获取流量信息
 @app.get("/system_traffic", tags=["System"])
