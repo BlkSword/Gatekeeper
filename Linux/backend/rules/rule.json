@@ -1,0 +1,488 @@
+[
+    {
+        "name": "账户锁定阈值检查",
+        "description": "检查Windows系统账户锁定阈值是否配置合规",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/account_lockout.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "当账户锁定阈值≤3时返回成功状态"
+        },
+        "baseline_standard": "CIS Microsoft Windows 10 Enterprise Benchmark v2.0 第18.9.4条",
+        "severity_level": "high",
+        "risk_description": "过高的账户锁定阈值可能导致系统遭受暴力密码破解攻击，攻击者可利用自动化工具尝试大量密码组合",
+        "solution": "通过组策略配置账户锁定阈值：1. 打开本地组策略编辑器 2. 计算机配置→Windows设置→安全设置→账户策略→账户锁定策略 3. 设置'账户锁定阈值'为3次失败登录",
+        "tip": "修改策略后建议进行登录测试验证，同时注意避免因测试导致合法账户被锁定"
+    },
+    {
+        "name": "账户登录事件审计检查",
+        "description": "检测系统是否启用账户登录事件审计策略，确保能够记录成功和失败的登录尝试",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/account_login_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "返回status字段为True，表示检测到Logon事件的Success和Failure审计已启用"
+        },
+        "baseline_standard": "CIS Windows Server 2019 Benchmark v2.0.0 - 17.4.1 Ensure 'Audit Logon' is enabled for success and failure",
+        "severity_level": "high",
+        "risk_description": "未启用登录事件审计将导致无法追踪账户登录尝试行为，增加安全事件响应难度，可能违反合规要求",
+        "solution": "1. 打开命令提示符以管理员身份运行\n2. 执行命令：auditpol /set /category:* /success:enable /failure:enable\n3. 特别确认Logon事件类型的审计状态",
+        "tip": "可通过'auditpol /get /category:*'命令手动验证当前审计策略配置"
+    },
+    {
+        "name": "账户管理检测",
+        "description": "检测系统是否启用用户账户管理事件的成功和失败日志审计策略",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/account_management_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "当用户账户管理事件（如创建、修改、删除账户）同时记录成功和失败日志时返回True，否则返回False"
+        },
+        "baseline_standard": "CIS Microsoft Windows Benchmark 2.3.4.1 - 审核账户管理事件应同时包含成功和失败尝试",
+        "severity_level": "high",
+        "risk_description": "未正确配置账户管理审计策略将导致无法追踪账户变更行为，攻击者可能通过创建/修改账户绕过安全控制而不被记录",
+        "solution": "1. 打开本地组策略编辑器(gpedit.msc)\n2. 导航到【计算机配置】->【Windows设置】->【安全设置】->【高级审核策略配置】->【系统审核策略】->【账户管理】\n3. 确保启用【审核账户管理】策略并勾选【成功】和【失败】选项\n4. 或使用命令行执行: auditpol /set /category:* /success:enable /failure:enable",
+        "tip": "可通过命令行auditpol /get /category:* | findstr \"User Account Management\"快速验证当前配置状态"
+    },
+    {
+        "name": "默认管理员账号重命名检测",
+        "description": "检测系统默认管理员账号是否已重命名，防止攻击者利用默认账号进行未授权访问。",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/admin_renamed.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "默认管理员账号已重命名（不存在 'Administrator' 用户）"
+        },
+        "baseline_standard": "根据 CIS 安全标准，系统默认管理员账号应重命名为非默认名称以降低攻击风险。",
+        "severity_level": "high",
+        "risk_description": "默认管理员账号（Administrator）未重命名可能导致攻击者直接针对该账号进行暴力破解或未授权访问，增加系统被入侵的风险。",
+        "solution": "1. 打开系统命令提示符（以管理员身份运行）。\n2. 执行命令 `net user` 查看当前用户列表。\n3. 如果存在 'Administrator' 用户，使用 `net user Administrator 新用户名` 重命名该账号。\n4. 验证新账号权限是否正常，并删除旧的默认管理员账号（如有必要）。\n5. 建议设置强密码策略并定期审计用户账号。",
+        "tip": "建议定期检查系统账号策略，确保所有默认账号均被重命名，并遵循最小权限原则。"
+    },
+    {
+        "name": "自动登录检测",
+        "description": "检测系统是否启用了自动登录功能，防止未经授权的访问。",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/auto_login_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "当 AutoAdminLogon=0 且 DefaultPassword 不存在时返回 {'status': True}"
+        },
+        "baseline_standard": "CIS Microsoft Windows 10 基准 19.4.1.1 节：应禁用自动登录功能",
+        "severity_level": "high",
+        "risk_description": "启用自动登录功能可能导致系统在无人值守时被未经授权的用户访问，增加数据泄露和恶意攻击的风险。",
+        "solution": "1. 打开注册表编辑器 regedit.exe\n2. 定位到 HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\n3. 将 AutoAdminLogon 的值改为 0\n4. 删除 DefaultPassword 注册表项（如果存在）\n5. 重启系统使更改生效",
+        "tip": "修改注册表前请创建系统还原点，操作需管理员权限。建议在域环境使用组策略统一配置。"
+    },
+    {
+        "name": "驱动器自动播放关闭检测",
+        "description": "检测Windows系统是否关闭所有驱动器类型的自动播放功能",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/autoplay_disabled_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "注册表项HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer的NoDriveTypeAutoRun值应为0x91（十六进制）"
+        },
+        "baseline_standard": "CIS Microsoft Windows 10 Enterprise Benchmark v2.0.0 - 2.3.4.5 Ensure 'Turn off Autoplay' is set to 'All drives'",
+        "severity_level": "high",
+        "risk_description": "未禁用驱动器自动播放可能导致恶意软件通过可移动存储设备自动传播，存在系统被感染的风险",
+        "solution": "1. 打开注册表编辑器\n2. 定位到HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer\n3. 创建/修改DWORD值NoDriveTypeAutoRun，设置为0x91\n4. 重启计算机使配置生效\n5. 通过组策略配置：计算机配置 -> 管理模板 -> 系统 -> 设备安装 -> 设备安装限制策略",
+        "tip": "修改注册表前请创建系统还原点，建议在测试环境验证配置效果后再应用于生产环境"
+    },
+    {
+        "name": "受控文件夹访问检测",
+        "description": "检测Windows Defender受控文件夹访问功能是否启用，防止恶意软件对重要文件的未授权修改",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/controlled_folders_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "{'check_name': '受控文件夹访问检测', 'status': True}"
+        },
+        "baseline_standard": "CIS Microsoft Windows 10安全基准 2.3.4.5 要求启用受控文件夹访问功能",
+        "severity_level": "high",
+        "risk_description": "未启用受控文件夹访问将导致系统面临勒索软件和恶意软件风险，可能导致敏感数据被加密或删除",
+        "solution": "1. 打开注册表编辑器 (regedit.exe)\n2. 定位到 HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Defender\\Windows Defender Exploit Guard\\Controlled Folder Access\n3. 将 EnableControlledFolderAccess 的值设置为 1\n4. 重启计算机使配置生效",
+        "tip": "建议通过Windows安全中心界面进行可视化配置，并定期通过脚本验证防护状态"
+    },
+    {
+        "name": "默认共享检测",
+        "description": "检测系统中是否存在默认的共享目录（如 C$、ADMIN$ 等）",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/default_shares_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "未发现默认共享目录，status 应为 True"
+        },
+        "baseline_standard": "CIS Microsoft Windows Server 2019 Benchmark - 2.2.17 禁用默认共享",
+        "severity_level": "high",
+        "risk_description": "默认共享（如 C$、ADMIN$）可能被攻击者利用进行未授权访问，导致敏感数据泄露或系统被远程控制。",
+        "solution": "1. 手动关闭共享：在命令提示符执行 `net share C$ /delete` 和 `net share ADMIN$ /delete`\n2. 修改注册表：在 `HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters` 下设置 `AutoShareServer` 为 0\n3. 通过组策略配置：计算机配置 → 管理模板 → 网络 → Lanman Server → 禁用自动共享",
+        "tip": "定期检查共享设置，确保仅保留必要的共享目录，并遵循最小权限原则。"
+    },
+    {
+        "name": "磁盘格式检测（NTFS）",
+        "description": "检测指定磁盘分区是否使用NTFS文件系统",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/disk_format_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "所有检查的磁盘(C:,D:,E:,F:)均使用NTFS文件系统"
+        },
+        "baseline_standard": "CIS Microsoft Windows 10 Enterprise Benchmark v2.0.0 - 18.9.1 Ensure system drives are configured to use NTFS",
+        "severity_level": "medium",
+        "risk_description": "非NTFS文件系统可能导致数据损坏、安全性降低和功能限制，包括：1. 缺乏Windows权限管理支持 2. 无法使用加密文件系统(EFS) 3. 性能优化不足 4. 数据恢复风险增加",
+        "solution": "1. 备份重要数据\n2. 打开命令提示符(管理员)\n3. 输入 convert X: /fs:ntfs (X为对应盘符)\n4. 按照提示完成转换过程\n5. 验证转换结果",
+        "tip": "转换文件系统前请务必备份重要数据，建议在系统维护时段操作。对于系统分区(C:)，建议通过组策略统一配置文件系统类型。"
+    },
+    {
+        "name": "DLL劫持风险检测",
+        "description": "检测系统关键DLL文件权限配置是否存在安全隐患",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/dll_hijack_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "返回布尔值，True表示权限配置安全，False表示存在不安全权限"
+        },
+        "baseline_standard": "确保C:\\Windows\\System32\\user32.dll的权限设置禁止非管理员用户修改",
+        "severity_level": "high",
+        "risk_description": "攻击者可能通过修改系统关键DLL文件实现权限提升或持久化驻留，该漏洞属于高风险安全缺陷",
+        "solution": "1. 使用icacls命令移除非管理员用户的写入权限\n2. 执行命令: icacls \"C:\\Windows\\System32\\user32.dll\" /grant administrators:F /remove Users /t /c\n3. 定期运行检测脚本验证权限配置\n4. 部署EDR解决方案实时监控系统文件完整性",
+        "tip": "修改系统文件权限前请创建系统还原点，建议在维护窗口期执行修复操作"
+    },
+    {
+        "name": "防火墙检测",
+        "description": "检查系统防火墙配置状态是否全部启用",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/firewall_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "所有防火墙配置文件（域、私有、公共）状态应为启用"
+        },
+        "baseline_standard": "CIS Microsoft Windows 10/11 Benchmark v2.0.0 - 9.1.1 确保防火墙配置文件启用",
+        "severity_level": "high",
+        "risk_description": "防火墙未启用可能导致未授权网络访问，增加系统被攻击风险，违反网络安全合规要求",
+        "solution": "1. 运行'netsh advfirewall set allprofiles state on'启用防火墙\n2. 配置防火墙入站/出站规则限制非必要端口\n3. 通过组策略配置持久化防火墙策略\n4. 定期使用'netsh advfirewall show allprofiles state'验证状态",
+        "tip": "修改防火墙配置前建议进行网络连通性测试，避免业务中断。可通过'netsh advfirewall set currentprofile settings blockinbound,allowinbound,allowoutbound'调整默认策略"
+    },
+    {
+        "name": "安全日志覆盖策略检测",
+        "description": "检测Windows系统是否启用安全日志的覆盖策略，确保日志文件不会因磁盘空间不足而被覆盖",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/log_retention_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "当检测到<Retention>值为1时返回True（启用日志覆盖策略）"
+        },
+        "baseline_standard": "Microsoft Security Baseline for Windows Event Logs: https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/basic-security-baseline-event-log-settings",
+        "severity_level": "high",
+        "risk_description": "未启用日志覆盖策略可能导致重要安全事件日志被新日志覆盖，造成审计追溯困难，增加安全风险",
+        "solution": "1. 打开事件查看器(eventvwr.msc)\n2. 右键点击'Windows日志' -> '安全'\n3. 选择'属性'\n4. 在'日志文件最大大小(KB)'处设置合理值\n5. 勾选'当达到最大日志大小时覆盖事件日志'",
+        "tip": "建议同时配置日志备份策略，定期归档重要日志文件，并监控日志存储空间使用情况"
+    },
+    {
+        "name": "日志状态检测",
+        "description": "检测系统日志和安全日志是否启用，确保日志记录功能正常运行",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/log_status_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "系统日志和安全日志均处于启用状态"
+        },
+        "baseline_standard": "CIS Microsoft Windows Server 基准 18.9.27.1.1",
+        "severity_level": "high",
+        "risk_description": "若系统日志或安全日志未启用，可能导致安全事件无法追溯，影响系统审计和故障排查",
+        "solution": "1. 通过『事件查看器』手动启用系统日志服务\n2. 通过组策略配置『计算机配置\\Windows设置\\安全设置\\高级审核策略配置\\系统日志』\n3. 使用命令 `wevtutil set-log System /enable:true` 和 `wevtutil set-log Security /enable:true` 强制启用",
+        "tip": "建议定期通过『事件查看器』检查日志服务状态，确保日志记录功能持续有效"
+    },
+    {
+        "name": "对象访问检测",
+        "description": "检测系统是否启用了对象访问的成功和失败事件审计策略",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/object_access_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "当对象访问的成功和失败事件审计策略启用时返回True，否则返回False"
+        },
+        "baseline_standard": "CIS Microsoft Windows Server 2019 Benchmark 4.1.1",
+        "severity_level": "high",
+        "risk_description": "未启用对象访问审计策略将导致无法追踪关键对象访问事件（如文件/注册表操作），增加安全违规风险且不利于事后溯源分析",
+        "solution": "1. 打开命令提示符（管理员权限）\n2. 执行命令: auditpol /set /category:*Object Access* /success:enable /failure:enable\n3. 通过组策略管理编辑器（gpedit.msc）在【计算机配置】-【Windows设置】-【安全设置】-【高级审核策略配置】中启用【对象访问】相关选项",
+        "tip": "建议在变更审计策略后重启系统以确保策略生效，可通过`auditpol /get /category:*`验证当前配置状态"
+    },
+    {
+        "name": "文件所有权权限检查",
+        "description": "检测系统中用户是否拥有取得文件所有权的特权权限(SeTakeOwnershipPrivilege)",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/ownership_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "当用户未启用SeTakeOwnershipPrivilege权限时，检查状态应为True（合规）"
+        },
+        "baseline_standard": "根据微软安全基线指南，应禁用不必要的特权权限，仅授权给必要账户",
+        "severity_level": "high",
+        "risk_description": "攻击者可能利用此权限篡改系统文件或敏感数据，绕过访问控制机制，导致系统完整性和机密性受损",
+        "solution": "1. 打开本地安全策略编辑器(gpedit.msc)\n2. 导航至计算机配置 -> Windows设置 -> 安全设置 -> 本地策略 -> 用户权限分配\n3. 找到'取得文件所有权'策略\n4. 移除非必要账户和组，建议保留SYSTEM和Domain Admins",
+        "tip": "建议定期审计特权权限分配，遵循最小权限原则，可配合组策略统一管理权限配置"
+    },
+    {
+        "name": "密码复杂性策略",
+        "description": "检测Windows系统的密码复杂性策略是否启用，确保密码必须包含大小写字母、数字和特殊字符的组合",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/password_complexity.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "status字段为true（表示策略已启用）且输出中包含'PasswordComplexity = 1'"
+        },
+        "baseline_standard": "符合CIS Microsoft Windows Server 2019基准 v2.0.0 第2.3.4.2条：密码必须符合复杂性要求",
+        "severity_level": "high",
+        "risk_description": "未启用密码复杂性策略可能导致用户设置简单密码（如纯数字/字母），增加被暴力破解或字典攻击的风险，违反NIST SP 800-63B密码策略要求",
+        "solution": "1. 打开组策略编辑器(gpedit.msc)\n2. 导航至 计算机配置 -> Windows设置 -> 安全设置 -> 账户策略 -> 密码策略\n3. 启用'密码必须符合复杂性要求'策略\n4. 运行gpupdate /force使策略生效",
+        "tip": "该脚本需以管理员权限运行，检测结果可能受本地安全策略覆盖影响。Windows家庭版用户可通过注册表HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters修改requiresignorseal=1"
+    },
+    {
+        "name": "密码历史记录检查",
+        "description": "检查系统密码历史记录的长度是否符合安全要求。",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/password_history.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "返回成功状态，当密码历史记录长度大于等于24时。"
+        },
+        "baseline_standard": "CIS Windows Security Policy要求密码历史记录至少保存24个密码。",
+        "severity_level": "high",
+        "risk_description": "密码历史记录不足可能导致用户重复使用旧密码，增加密码泄露风险。",
+        "solution": "1. 打开组策略管理器。\n2. 导航到计算机配置 -> Windows设置 -> 安全设置 -> 账户策略 -> 密码策略。\n3. 设置“密码历史记录长度”为24或更高。",
+        "tip": "您可以通过运行 'net accounts' 命令手动验证密码历史记录长度的当前设置。"
+    },
+    {
+        "name": "密码长度最小值检测",
+        "description": "检测系统密码的最小长度是否符合安全要求",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/password_length.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "密码最小长度应≥8字符"
+        },
+        "baseline_standard": "CIS Windows Benchmark v2.4.0 - 1.1.1 Ensure minimum password length is configured",
+        "severity_level": "high",
+        "risk_description": "密码长度不足可能导致暴力破解风险增加，攻击者可通过自动化工具快速破解弱密码",
+        "solution": "1. 打开组策略编辑器(gpedit.msc)\n2. 导航至【计算机配置】->【Windows设置】->【安全设置】->【账户策略】->【密码策略】\n3. 双击【密码必须符合复杂性要求】并启用\n4. 双击【密码长度最小值】设置为8-12字符（根据组织策略）\n5. 通过命令行执行【net accounts /minpwlen:8】立即生效",
+        "tip": "建议结合密码复杂度检查、账户锁定策略等其他安全措施共同加固系统安全"
+    },
+    {
+        "name": "密码最长使用期检查",
+        "description": "检测系统密码最长使用期限是否超过安全基线要求",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/password_max_age.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "当密码最长使用期≤90天时返回status=true，否则返回status=false"
+        },
+        "baseline_standard": "符合NIST SP 800-53 AC-121安全基线要求，强制密码每90天更换一次",
+        "severity_level": "high",
+        "risk_description": "过长的密码使用周期会增加密码泄露风险，攻击者可能通过离线破解获取敏感信息",
+        "solution": "1. 打开命令提示符执行: net accounts /MAXPWAGE:90\n2. 验证注册表项: HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters\\MaximumPasswordAge 设置为90\n3. 定期通过本地安全策略(gpedit.msc)检查密码策略配置",
+        "tip": "建议配合密码复杂度检查(rule_id: password_complexity)和密码历史记录检查(rule_id: password_history)共同保障密码安全"
+    },
+    {
+        "name": "密码最短使用期检测",
+        "description": "检测Windows系统密码策略中密码最短使用期是否符合安全要求",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/password_min_age.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "返回状态值status为True（密码最短使用期≥1天）"
+        },
+        "baseline_standard": "CIS Microsoft Windows Security Benchmark 第4.1.3条",
+        "severity_level": "low",
+        "risk_description": "密码最短使用期过短可能导致攻击者通过快速重置密码绕过账户锁定策略，增加密码泄露风险",
+        "solution": "1. 打开组策略编辑器(gpedit.msc)\n2. 导航至计算机配置->Windows设置->安全设置->账户策略->密码策略\n3. 配置'密码最短使用期限'为1天或更长\n4. 或通过命令行执行: net accounts /MINPWAGE:1",
+        "tip": "建议定期检查密码策略配置，确保符合企业安全合规要求"
+    },
+    {
+        "name": "远程桌面端口检查",
+        "description": "检测系统是否使用默认的远程桌面端口(3389)，建议修改为非默认端口以增强安全性",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/rdp_port_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "Remote Desktop Port 检查通过"
+        },
+        "baseline_standard": "远程桌面端口不应设置为默认的3389",
+        "severity_level": "high",
+        "risk_description": "使用默认端口易受自动化攻击和暴力破解，可能导致未授权访问",
+        "solution": "1. 打开注册表编辑器\n2. 定位到HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\n3. 修改PortNumber值为1025-65535之间的非特权端口\n4. 重启远程桌面服务或系统使配置生效\n5. 更新防火墙规则允许新端口通信",
+        "tip": "修改端口后请确保客户端能正常连接，并测试防火墙配置有效性"
+    },
+    {
+        "name": "远程注册表访问检测",
+        "description": "检测系统是否限制了远程注册表访问的共享路径数量",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/remote_registry_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "当RemoteRegAccessPaths未配置或配置路径数≤2时返回True，否则返回False"
+        },
+        "baseline_standard": "微软安全基线建议限制远程注册表访问路径数量，防止攻击者通过共享路径进行横向渗透",
+        "severity_level": "low",
+        "risk_description": "若存在过多远程注册表访问路径，攻击者可能利用合法共享路径访问敏感注册表信息，导致系统权限被窃取",
+        "solution": "1. 打开组策略编辑器(gpedit.msc)\n2. 导航至计算机配置->Windows设置->安全设置->本地策略->安全选项\n3. 配置'网络访问: 可远程访问的注册表路径'策略\n4. 删除不必要的共享路径，仅保留必要路径如：System\\CurrentControlSet\n5. 通过reg add命令手动清理注册表残留路径",
+        "tip": "建议定期使用reg query命令验证注册表路径配置，确保符合最小权限原则"
+    },
+    {
+        "name": "远程关机权限检测",
+        "description": "检测系统是否启用了SeRemoteShutdownPrivilege权限，防止未授权的远程关机操作",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/remote_shutdown_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "Remote Shutdown Privilege Check 通过"
+        },
+        "baseline_standard": "禁止启用SeRemoteShutdownPrivilege权限，仅授权必要管理账户使用此权限",
+        "severity_level": "high",
+        "risk_description": "若攻击者获取此权限，可通过远程强制关闭系统导致业务中断，或用于实施横向渗透攻击",
+        "solution": "1. 打开组策略编辑器(gpedit.msc)\n2. 定位到计算机配置\\Windows设置\\安全设置\\本地策略\\用户权限分配\n3. 双击【从远程系统强制关机】策略\n4. 移除所有非必要账户/组（如默认的Administrators组）\n5. 保存策略并执行gpupdate /force刷新策略",
+        "tip": "建议将此权限仅保留给Domain Admins组，并定期通过本检测工具验证配置有效性"
+    },
+    {
+        "name": "屏幕保护程序检测",
+        "description": "检测Windows系统屏幕保护程序是否启用、超时时间不超过15分钟且启用了密码保护",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/screensaver_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "屏幕保护程序启用、超时时间≤900秒且启用了密码保护"
+        },
+        "baseline_standard": "CIS Microsoft Windows Benchmark 2.2.11/12/13 要求：1.启用屏幕保护程序 2.超时时间≤900秒 3.启用密码保护",
+        "severity_level": "medium",
+        "risk_description": "未配置安全的屏幕保护程序可能导致无人值守时未授权访问系统，造成敏感信息泄露或恶意操作",
+        "solution": "1. 打开控制面板 > 个性化 > 屏幕保护程序设置\n2. 选择屏幕保护程序并启用\n3. 设置等待时间不超过15分钟\n4. 勾选'恢复时显示登录屏幕'\n5. 通过组策略(gpedit.msc)配置：计算机配置 > 管理模板 > 控制面板 > 个性化 > 强制设置屏幕保护程序",
+        "tip": "建议在电源管理设置中同步调整显示器关闭时间和休眠时间，建议超时时间不超过900秒（15分钟）"
+    },
+    {
+        "name": "安全日志大小检测",
+        "description": "检测Windows系统安全日志的最大存储容量是否达到2048MB",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/security_log_size_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "当安全日志最大容量 >= 2048MB 时返回 {\"status\": true}，否则返回 false"
+        },
+        "baseline_standard": "安全日志最大存储容量应至少配置为2048MB",
+        "severity_level": "medium",
+        "risk_description": "安全日志容量不足可能导致安全事件记录丢失，增加系统被攻击后无法追溯的风险",
+        "solution": "1. 打开命令提示符执行: wevtutil set-log Security /maxSize:2147483648\n2. 或通过组策略配置: 计算机配置 -> Windows设置 -> 安全设置 -> 事件日志 -> 安全日志\n3. 设置最大日志大小为2048MB（2GB）",
+        "tip": "修改日志大小后需要重启事件日志服务生效，建议在维护窗口操作"
+    },
+    {
+        "name": "SYN Attack Protection Check",
+        "description": "检测Windows系统是否启用SYN攻击防护机制",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/syn_attack_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "注册表项SynAttackProtect的值应设置为2"
+        },
+        "baseline_standard": "注册表项HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\SynAttackProtect的值应设置为2",
+        "severity_level": "high",
+        "risk_description": "未启用SYN攻击防护可能导致系统遭受SYN洪水攻击，引发拒绝服务风险",
+        "solution": "1. 打开注册表编辑器（regedit.exe）\n2. 定位到HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\n3. 右键空白处选择新建->DWORD值，名称设为SynAttackProtect\n4. 将值设置为2并保存\n5. 重启系统使配置生效",
+        "tip": "修改注册表前请创建系统还原点，操作需管理员权限"
+    },
+    {
+        "name": "unnecessary_services_check",
+        "description": "检测系统中不必要的服务(TELNET、RemoteRegistry、SMTP)是否已禁用",
+        "rule_type": "python_script",
+        "params": {
+            "script_path": "rules/checks/unnecessary_services_check.py",
+            "args": []
+        },
+        "expected_result": {
+            "status": true,
+            "message": "所有目标服务(TELNET、RemoteRegistry、SMTP)均处于禁用状态"
+        },
+        "baseline_standard": "CIS Microsoft Windows Server 基线标准",
+        "severity_level": "high",
+        "risk_description": "TELNET服务启用可能导致明文凭证传输风险，RemoteRegistry服务未禁用可能被攻击者利用进行远程注册表篡改，SMTP服务运行可能被用于发送恶意邮件或横向移动",
+        "solution": "1. 使用PowerShell执行: Set-Service -Name TELNET -StartupType Disabled\n2. 执行: Set-Service -Name RemoteRegistry -StartupType Disabled\n3. 执行: Set-Service -Name SMTP -StartupType Disabled\n4. 通过组策略配置: 计算机配置->Windows设置->安全设置->系统服务\n5. 重启系统使配置生效",
+        "tip": "操作前请确认服务禁用不会影响业务系统，建议在测试环境验证后实施"
+    }
+]

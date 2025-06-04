@@ -1,13 +1,12 @@
 import ctypes
 import traceback
-import os  # 新增 os 模块导入
 from fastapi.logger import logger
 from fastapi.responses import JSONResponse
 
 
 def get_health_check():
     try:
-        has_admin = os.geteuid() == 0
+        has_admin = bool(ctypes.windll.shell32.IsUserAnAdmin())
         return {
             "status": "ok",
             "has_admin_permission": has_admin  

@@ -266,7 +266,7 @@ def detect_anomaly_sequence(records):
 # 监控任务主函数
 async def monitor_anomalies():
     from baseline.model.ewm_model import BaselineHistory
-    from backend.Windows.alert.alert_service import send_email_alert
+    from backend.alert.alert_service import send_email_alert
     
     while True:
         try:
