@@ -5,7 +5,7 @@ import json
 import re
 import os
 import hashlib
-import winreg  # Windows only
+#import winreg  # Windows only
 from rules.rules_models import Rule, TaskResult
 
 async def execute_rule(rule: Rule) -> dict:
@@ -51,12 +51,7 @@ async def execute_rule(rule: Rule) -> dict:
             output = result.stdout + result.stderr
 
         elif rule.rule_type == "registry":
-            # Windows 注册表检查
-            hive = getattr(winreg, rule.params["hive"])
-            key = winreg.OpenKey(hive, rule.params["key"])
-            value, _ = winreg.QueryValueEx(key, rule.params["value_name"])
-            is_compliant = value == rule.expected_result["expected_value"]
-            output = f"Registry check: {rule.params['key']}\\{rule.params['value_name']}"
+            pass
 
         elif rule.rule_type == "python_script":
             BASE_DIR = os.path.dirname(os.path.abspath(__file__))

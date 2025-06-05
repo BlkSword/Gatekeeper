@@ -1,9 +1,10 @@
 {
-    "host_server": "smtp.qq.com",
-    "sender_qq": "wfshenm@qq.com",
+    "host_server": "smtp.newserver.com",
+    "sender_qq": "newemail@qq.com",
     "pwd": "tsbfpwnfsuocciha",
     "receiver": [
-        "wfshenm@qq.com"
+        "newemail@qq.com",
+        "another@example.com"
     ],
     "mail_title": "基线告警",
     "mail_content": "您的基线已经超过了预设阈值，请及时处理！"
