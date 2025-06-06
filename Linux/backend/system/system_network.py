@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def get_network_status():
     """获取网络状态信息"""
-    
+
     # 获取网关信息
     def get_gateways():
         try:
@@ -44,36 +44,59 @@ def get_network_status():
         except Exception as e:
             return {"error": str(e)}
 
-    # 获取防火墙规则
+    # 获取防火墙规则（仅解析 ufw-user-input 链）
     def get_firewall_rules():
         try:
-            result = subprocess.check_output(
-                'iptables -L -n -v --line-numbers',
+            result = subprocess.run(
+                'sudo iptables -L -n -v --line-numbers',
                 shell=True,
-                stderr=subprocess.STDOUT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 universal_newlines=True,
                 encoding='utf-8'
             )
-            
+
+            if result.returncode != 0:
+                logger.error(f"执行 iptables 命令失败: {result.stderr}")
+                return {"error": result.stderr}
+
+            output = result.stdout
+            rules_section = False
             rules = []
-            current_chain = None
-            for line in result.split('\n'):
+
+            for line in output.split('\n'):
                 line = line.strip()
-                if line.startswith('Chain '):
-                    current_chain = line.split()[1]
-                elif line and not line.startswith('num') and current_chain:
+
+                # 开始解析 ufw-user-input 链
+                if line.startswith('Chain ufw-user-input'):
+                    rules_section = True
+                    continue
+
+                # 结束解析其他链
+                if rules_section and line.startswith('Chain '):
+                    break
+
+                # 解析规则行
+                if rules_section and line and not line.startswith('num '):
                     parts = line.split()
-                    if len(parts) >= 7:
-                        rules.append({
-                            "chain": current_chain,
-                            "num": parts[0],
-                            "target": parts[1],
-                            "prot": parts[2],
-                            "opt": parts[3],
-                            "source": parts[4],
-                            "destination": parts[5]
-                        })
+                    if len(parts) >= 8:
+                        try:
+                            rule = {
+                                "num": int(parts[0]),
+                                "pkts": int(parts[1]),
+                                "bytes": int(parts[2]),
+                                "target": parts[3],
+                                "prot": parts[4],
+                                "source": parts[7].split(':')[0],  # 忽略端口部分
+                                "destination": parts[8].split(':')[0]  # 忽略端口部分
+                            }
+                            rules.append(rule)
+                        except (ValueError, IndexError) as e:
+                            logger.warning(f"解析规则失败: {line} - {e}")
+                            continue
+
             return rules
+
         except Exception as e:
             logger.error(f"获取防火墙规则失败: {str(e)}")
             return {"error": str(e)}
@@ -86,7 +109,6 @@ def get_network_status():
                 try:
                     connections = proc.connections()
                     if connections:
-                        
                         protocols = list({conn.type.name for conn in connections if conn.type})
                         services.append({
                             "name": proc.info['name'],
@@ -117,3 +139,7 @@ def get_network_status():
         "firewall_rules": get_firewall_rules(),
         "network_services": get_network_services(),
     }
+
+# if __name__ == "__main__":
+#     network_info = get_network_status()
+#     print(network_info["firewall_rules"])

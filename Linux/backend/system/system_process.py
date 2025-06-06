@@ -1,15 +1,12 @@
-# 获取服务状态
-# 检测内容有：进程和服务状态、已安装程序列表、服务详细信息、关键服务状态、系统配置信息
-
 import subprocess
 import psutil
 import platform
 from datetime import datetime
+import re  
 
 def get_process_info():
     """获取进程和服务状态信息"""
-    
-    # 获取关键服务状态
+
     def get_services():
         try:
             list_output = subprocess.check_output(
@@ -32,7 +29,7 @@ def get_process_info():
 
                 try:
                     show_output = subprocess.check_output(
-                        f'systemctl show {svc_name} --property=Description,MainPID,ExecStart',
+                        f'systemctl --no-pager show {svc_name} --property=Description,MainPID,ExecStart',
                         shell=True,
                         stderr=subprocess.STDOUT,
                         encoding='utf-8'
@@ -43,11 +40,20 @@ def get_process_info():
                             key, val = detail_line.split('=', 1)
                             details[key.strip()] = val.strip()
 
-                    # 提取可执行路径
                     exec_start = details.get('ExecStart', '')
-                    executable_path = exec_start.split()[0] if exec_start else '未知路径'
+                    executable_path = "未知路径"
 
-                    # 提取PID
+                    if exec_start:
+                        # 使用正则表达式提取 path= 字段
+                        match = re.search(r'path="([^"]+)"|path=([^\s;]+)', exec_start)
+                        if match:
+                            executable_path = match.group(1) or match.group(2)
+                        else:
+                            # 退化为按空格分割
+                            parts = exec_start.split()
+                            if parts:
+                                executable_path = parts[0]
+
                     pid_str = details.get('MainPID', '0')
                     pid = int(pid_str) if pid_str.isdigit() else None
 
@@ -66,12 +72,10 @@ def get_process_info():
                         "pid": None,
                         "executable_path": "获取失败"
                     })
-            # 过滤系统关键服务
             return [s for s in services if 'systemd' in s.get('name', '') or 'network' in s.get('name', '')]
         except Exception as e:
             return {"error": f"获取服务失败：{str(e)}"}
 
-    # 获取已安装程序列表
     def get_installed_programs():
         try:
             programs = []
@@ -87,19 +91,28 @@ def get_process_info():
                 )
                 for line in dpkg_output.split('\n'):
                     line = line.strip()
-                    if line:
+                    if not line:
+                        continue
+                    parts = line.split('\t')
+                    if len(parts) < 2:
+                        continue
+                    name = parts[0]
+                    version = parts[1]
+                    install_time = parts[2] if len(parts) >= 3 else ''
+
+                    install_date = "未知"
+                    if install_time and install_time.isdigit():
                         try:
-                            name, version, install_time = line.split('\t')
-                            install_date = "未知"
-                            if install_time.isdigit():
-                                install_date = datetime.fromtimestamp(int(install_time)).strftime('%Y-%m-%d')
-                            programs.append({
-                                "name": name,
-                                "version": version,
-                                "install_date": install_date
-                            })
+                            install_date = datetime.fromtimestamp(int(install_time)).strftime('%Y-%m-%d')
                         except ValueError:
-                            continue
+                            install_date = "未知"
+
+                    programs.append({
+                        "name": name,
+                        "version": version,
+                        "install_date": install_date
+                    })
+
             elif distro_id in ['rhel', 'centos', 'fedora']:
                 rpm_output = subprocess.check_output(
                     "rpm -qa --queryformat '%{NAME},%{VERSION},%{INSTALLTIME}\n'",
@@ -109,26 +122,33 @@ def get_process_info():
                 )
                 for line in rpm_output.split('\n'):
                     line = line.strip()
-                    if line:
+                    if not line:
+                        continue
+                    parts = line.split(',', 2)
+                    if len(parts) < 2:
+                        continue
+                    name = parts[0]
+                    version = parts[1]
+                    install_time = parts[2] if len(parts) >= 3 else ''
+
+                    install_date = "未知"
+                    if install_time and install_time.isdigit():
                         try:
-                            name, version, install_time = line.split(',', 2)
-                            install_date = "未知"
-                            if install_time.isdigit():
-                                install_date = datetime.fromtimestamp(int(install_time)).strftime('%Y-%m-%d')
-                            programs.append({
-                                "name": name,
-                                "version": version,
-                                "install_date": install_date
-                            })
+                            install_date = datetime.fromtimestamp(int(install_time)).strftime('%Y-%m-%d')
                         except ValueError:
-                            continue
+                            install_date = "未知"
+
+                    programs.append({
+                        "name": name,
+                        "version": version,
+                        "install_date": install_date
+                    })
             else:
                 return {"error": f"不支持的Linux发行版: {distro_id}"}
             return programs
         except Exception as e:
             return {"error": f"获取已安装程序失败：{str(e)}"}
 
-    # 获取系统运行时间
     boot_time = psutil.boot_time()
     uptime_seconds = psutil.time.time() - boot_time
     uptime_days = int(uptime_seconds // 86400)
@@ -140,3 +160,7 @@ def get_process_info():
         "installed_programs": get_installed_programs(),
         "system_uptime": uptime_str
     }
+
+# if __name__ == "__main__":
+#     result = get_process_info()
+#     print(result)

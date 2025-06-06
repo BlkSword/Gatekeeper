@@ -54,7 +54,7 @@ def check_internet():
     # 计算总磁盘使用率
     total_disk_percent = (total_disk_used / total_disk_space * 100) if total_disk_space > 0 else 0
 
-    # 新增：获取系统负载
+    # 获取系统负载
     def _get_system_load():
         try:
             output = subprocess.check_output(["uptime"], stderr=subprocess.STDOUT, shell=True).decode()
