@@ -1,5 +1,18 @@
 # Gatekeeper —— 智能主机安全基线动态检测系统
 
+## 项目前端部分截图
+
+<table>
+<tr>
+<td><img src="https://img.picui.cn/free/2025/06/06/684296d47c19e.png" alt="图片1" width="500"/></td>
+<td><img src="https://img.picui.cn/free/2025/06/06/684296d7c2600.png" alt="图片2" width="500"/></td>
+</tr>
+<tr>
+<td><img src="https://img.picui.cn/free/2025/06/06/684296d7d7c45.png" alt="图片3" width="500"/></td>
+<td><img src="https://img.picui.cn/free/2025/06/06/684296d7d11eb.png" alt="图片4" width="500"/></td>
+</tr>
+</table>
+
 ## 简介
 
 Gatekeeper 是一个基于规则驱动的主机安全基线自动化检测与动态风险评估系统。它解决了传统人工检测效率低、覆盖不全、风险展示不直观等问题，通过前后端分离架构（前端Vue3+Element Plus+ECharts，后端Python+FastAPI），实现了高效的主机安全合规解决方案。
