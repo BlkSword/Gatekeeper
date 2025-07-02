@@ -4,12 +4,8 @@
 
 <table>
 <tr>
-<td><img src="https://img.picui.cn/free/2025/06/06/684296d47c19e.png" alt="图片1" width="500"/></td>
-<td><img src="https://img.picui.cn/free/2025/06/06/684296d7c2600.png" alt="图片2" width="500"/></td>
-</tr>
-<tr>
-<td><img src="https://img.picui.cn/free/2025/06/06/684296d7d7c45.png" alt="图片3" width="500"/></td>
-<td><img src="https://img.picui.cn/free/2025/06/06/684296d7d11eb.png" alt="图片4" width="500"/></td>
+<td><img src="https://img.picui.cn/free/2025/07/03/686562adaede6.png" alt="图片1" width="500"/></td>
+<td><img src="https://img.picui.cn/free/2025/07/03/686562ae1e3cb.png" alt="图片2" width="500"/></td>
 </tr>
 </table>
 
