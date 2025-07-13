@@ -4,8 +4,8 @@
 
 <table>
 <tr>
-<td><img src="https://img.picui.cn/free/2025/07/03/6865631b92806.png" alt="图片1" width="500"/></td>
-<td><img src="https://img.picui.cn/free/2025/07/03/686562ae1e3cb.png" alt="图片2" width="500"/></td>
+<td><img src="https://free.picui.cn/free/2025/07/03/6865631b92806.png" alt="图片1" width="500"/></td>
+<td><img src="https://free.picui.cn/free/2025/07/03/686562ae1e3cb.png" alt="图片2" width="500"/></td>
 </tr>
 </table>
  
