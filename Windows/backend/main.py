@@ -27,6 +27,7 @@ from asyncio import create_task
 from rules.rules_models import Rule, Task, TaskResult
 from rules.schemas import RuleCreate, RuleUpdate
 from rules.rules_executor import run_security_checks
+from rules.rules_executor import run_single_security_check
 
 # 系统模块导入
 from system.system_status import check_system_status
@@ -514,7 +515,7 @@ async def start_single_scan(background_tasks: BackgroundTasks, name: str = Body(
     )
 
     # 将规则名称传递给执行函数
-    background_tasks.add_task(run_security_checks, task_id, rule_name=name)
+    background_tasks.add_task(run_single_security_check, task_id, rule_name=name)
     return {"task_id": task_id, "message": f"检测任务已启动，正在执行规则：{name}"}
 
 

@@ -59,8 +59,9 @@ def check_internet():
         try:
             output = subprocess.check_output(["uptime"], stderr=subprocess.STDOUT, shell=True).decode()
             if "load average" in output:
-                load_avg = output.split("load average:")[1].strip().split(',')[2].strip()
-                return load_avg
+                loads = output.split("load average:")[1].strip().split(',')
+                load_sum = sum(float(load.strip()) for load in loads)
+                return str(load_sum)
             return "0.0"
         except Exception as e:
             logger.error(f"获取系统负载失败: {e}")
@@ -78,7 +79,7 @@ def check_internet():
             return "未联网"
 
     result = {
-        "system_load": f"{_get_system_load()}%",  # 使用uptime的5分钟负载
+        "system_load": f"{_get_system_load()}%",  # 使用uptime的1分钟、5分钟、15分钟负载总和
         "cpu_usage": f"{cpu_percent_total}%",
         "cpu_cores": cpu_cores,
         "per_cpu_usage": [f"{core}%" for core in per_cpu_usage],

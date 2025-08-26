@@ -185,9 +185,19 @@
         </el-card>
       </el-col>
     </el-row>
+
     <!-- 网络连接抽屉 -->
     <el-drawer v-model="drawers.network.visible" title="网络连接状态" direction="rtl" size="50%">
-      <el-table :data="networkTableData" border style="margin: 20px;">
+      <div style="margin: 20px;">
+        <el-input v-model="searchQueries.network" placeholder="搜索网络接口..." clearable style="margin-bottom: 20px;">
+          <template #prefix>
+            <el-icon>
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
+      </div>
+      <el-table :data="filteredNetworkTableData" border style="margin: 20px;">
         <el-table-column prop="interface" label="接口" />
         <el-table-column prop="ip" label="IP地址" />
         <el-table-column prop="mask" label="子网掩码" />
@@ -200,13 +210,23 @@
           </template>
         </el-table-column>
       </el-table>
-      <el-pagination layout="prev, pager, next" :total="networkInterfaces.length" :page-size="drawers.network.pageSize"
-        :current-page="drawers.network.currentPage" @current-change="handleDrawerNetworkPageChange"
-        style="margin: 20px;" />
+      <el-pagination layout="prev, pager, next" :total="filteredNetworkInterfaces.length"
+        :page-size="drawers.network.pageSize" :current-page="drawers.network.currentPage"
+        @current-change="handleDrawerNetworkPageChange" style="margin: 20px;" />
     </el-drawer>
+
     <!-- 进程信息抽屉 -->
     <el-drawer v-model="drawers.process.visible" title="运行进程信息" direction="rtl" size="50%">
-      <el-table :data="processTableData" border style="margin: 20px;">
+      <div style="margin: 20px;">
+        <el-input v-model="searchQueries.process" placeholder="搜索进程..." clearable style="margin-bottom: 20px;">
+          <template #prefix>
+            <el-icon>
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
+      </div>
+      <el-table :data="filteredProcessTableData" border style="margin: 20px;">
         <el-table-column prop="name" label="进程名称" />
         <el-table-column prop="pid" label="PID" />
         <el-table-column prop="cpu" label="CPU(%)" />
@@ -221,13 +241,23 @@
           </template>
         </el-table-column>
       </el-table>
-      <el-pagination layout="prev, pager, next" :total="processes.length" :page-size="drawers.process.pageSize"
+      <el-pagination layout="prev, pager, next" :total="filteredProcesses.length" :page-size="drawers.process.pageSize"
         :current-page="drawers.process.currentPage" @current-change="handleDrawerProcessPageChange"
         style="margin: 20px;" />
     </el-drawer>
+
     <!-- 服务信息抽屉 -->
     <el-drawer v-model="drawers.service.visible" title="服务状态" direction="rtl" size="50%">
-      <el-table :data="serviceTableData" border style="margin: 20px;">
+      <div style="margin: 20px;">
+        <el-input v-model="searchQueries.service" placeholder="搜索服务..." clearable style="margin-bottom: 20px;">
+          <template #prefix>
+            <el-icon>
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
+      </div>
+      <el-table :data="filteredServiceTableData" border style="margin: 20px;">
         <el-table-column prop="display_name" label="服务名称" />
         <el-table-column prop="status" label="状态">
           <template #default="{ row }">
@@ -238,13 +268,23 @@
         </el-table-column>
         <el-table-column prop="path" label="执行路径" />
       </el-table>
-      <el-pagination layout="prev, pager, next" :total="services.length" :page-size="drawers.service.pageSize"
+      <el-pagination layout="prev, pager, next" :total="filteredServices.length" :page-size="drawers.service.pageSize"
         :current-page="drawers.service.currentPage" @current-change="handleDrawerServicePageChange"
         style="margin: 20px;" />
     </el-drawer>
+
     <!-- 网络服务信息抽屉 -->
     <el-drawer v-model="drawers.networkService.visible" title="网络服务信息" direction="rtl" size="50%">
-      <el-table :data="networkServiceTableData" border style="margin: 20px;">
+      <div style="margin: 20px;">
+        <el-input v-model="searchQueries.networkService" placeholder="搜索网络服务..." clearable style="margin-bottom: 20px;">
+          <template #prefix>
+            <el-icon>
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
+      </div>
+      <el-table :data="filteredNetworkServiceTableData" border style="margin: 20px;">
         <el-table-column prop="name" label="服务名称" />
         <el-table-column prop="pid" label="PID" />
         <el-table-column prop="exe_path" label="执行路径" />
@@ -254,13 +294,23 @@
           </template>
         </el-table-column>
       </el-table>
-      <el-pagination layout="prev, pager, next" :total="networkStats.length" :page-size="drawers.networkStats.pageSize"
-        :current-page="drawers.networkStats.currentPage" @current-change="handleDrawerNetworkServicePageChange"
-        style="margin: 20px;" />
+      <el-pagination layout="prev, pager, next" :total="filteredNetworkServices.length"
+        :page-size="drawers.networkService.pageSize" :current-page="drawers.networkService.currentPage"
+        @current-change="handleDrawerNetworkServicePageChange" style="margin: 20px;" />
     </el-drawer>
+
     <!-- 防火墙抽屉 -->
     <el-drawer v-model="drawers.firewall.visible" title="防火墙规则" direction="rtl" size="50%">
-      <el-table :data="firewallTableData" border>
+      <div style="margin: 20px;">
+        <el-input v-model="searchQueries.firewall" placeholder="搜索防火墙规则..." clearable style="margin-bottom: 20px;">
+          <template #prefix>
+            <el-icon>
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
+      </div>
+      <el-table :data="filteredFirewallTableData" border>
         <el-table-column prop="num" label="规则编号" />
         <el-table-column prop="target" label="目标操作" />
         <el-table-column prop="prot" label="协议类型">
@@ -275,20 +325,31 @@
         <el-table-column prop="pkts" label="数据包数" />
         <el-table-column prop="bytes" label="字节数" />
       </el-table>
-      <el-pagination layout="prev, pager, next" :total="firewallRules.length" :page-size="drawers.firewall.pageSize"
-        :current-page="drawers.firewall.currentPage" @current-change="handleDrawerFirewallPageChange"
-        style="margin: 20px;" />
+      <el-pagination layout="prev, pager, next" :total="filteredFirewallRules.length"
+        :page-size="drawers.firewall.pageSize" :current-page="drawers.firewall.currentPage"
+        @current-change="handleDrawerFirewallPageChange" style="margin: 20px;" />
     </el-drawer>
+
     <!-- 已安装程序抽屉 -->
     <el-drawer v-model="drawers.app.visible" title="已安装程序" direction="rtl" size="50%">
-      <el-table :data="appTableData" border style="margin: 20px;">
+      <div style="margin: 20px;">
+        <el-input v-model="searchQueries.app" placeholder="搜索已安装程序..." clearable style="margin-bottom: 20px;">
+          <template #prefix>
+            <el-icon>
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
+      </div>
+      <el-table :data="filteredAppTableData" border style="margin: 20px;">
         <el-table-column prop="name" label="程序名称" />
         <el-table-column prop="version" label="版本" />
         <el-table-column prop="installDate" label="安装日期" />
       </el-table>
-      <el-pagination layout="prev, pager, next" :total="installedApps.length" :page-size="drawers.app.pageSize"
+      <el-pagination layout="prev, pager, next" :total="filteredInstalledApps.length" :page-size="drawers.app.pageSize"
         :current-page="drawers.app.currentPage" @current-change="handleDrawerAppPageChange" style="margin: 20px;" />
     </el-drawer>
+
     <!-- 网格统计抽屉 -->
     <el-drawer v-model="drawers.networkStats.visible" title="网络数据统计" direction="rtl" size="50%">
       <div style="margin: 20px;">
@@ -314,6 +375,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import * as echarts from 'echarts'
+import { Search } from '@element-plus/icons-vue'
 
 // 缓存键名
 const CACHE_KEYS = {
@@ -371,6 +433,16 @@ const processes = ref([])
 const services = ref([])
 const installedApps = ref([])
 
+// 搜索查询
+const searchQueries = ref({
+  network: '',
+  process: '',
+  service: '',
+  networkService: '',
+  firewall: '',
+  app: ''
+})
+
 // 从缓存加载数据
 function loadFromCache() {
   const metrics = getCache(CACHE_KEYS.SYSTEM_METRICS)
@@ -396,7 +468,7 @@ function loadFromCache() {
 // 获取系统状态数据（带缓存更新）
 async function fetchSystemStatus() {
   try {
-    const response = await fetch('http://14.103.225.191:8000/system_status')
+    const response = await fetch('http://127.0.0.1:8000/system_status')
     if (!response.ok) throw new Error('请求失败')
     const data = await response.json()
     systemMetrics.value.forEach((metric, index) => {
@@ -427,7 +499,7 @@ async function fetchSystemStatus() {
 // 获取网络数据（带缓存更新）
 async function fetchNetworkData() {
   try {
-    const response = await fetch('http://14.103.225.191:8000/system_network')
+    const response = await fetch('http://127.0.0.1:8000/system_network')
     if (!response.ok) throw new Error('网络数据请求失败')
     const data = await response.json()
 
@@ -489,7 +561,7 @@ async function fetchNetworkData() {
 // 获取系统服务数据（带缓存更新）
 async function fetchSystemServices() {
   try {
-    const response = await fetch('http://14.103.225.191:8000/system_process')
+    const response = await fetch('http://127.0.0.1:8000/system_process')
     if (!response.ok) throw new Error('系统服务数据请求失败')
     const data = await response.json()
 
@@ -516,7 +588,7 @@ async function fetchSystemServices() {
 // 获取系统运行数据（带缓存更新）
 async function fetchSystemProcess() {
   try {
-    const response = await fetch('http://14.103.225.191:8000/system_running')
+    const response = await fetch('http://127.0.0.1:8000/system_running')
     if (!response.ok) throw new Error('系统运行数据请求失败')
     const data = await response.json()
 
@@ -563,7 +635,7 @@ const trafficData = {
 async function updateNetworkChart() {
   if (!chartInstance) return
   try {
-    const response = await fetch('http://14.103.225.191:8000/system_traffic')
+    const response = await fetch('http://127.0.0.1:8000/system_traffic')
     if (!response.ok) throw new Error('请求失败')
     const data = await response.json()
     const now = new Date()
@@ -705,30 +777,105 @@ function handleDrawerNetworkServicePageChange(val) {
   drawers.value.networkService.currentPage = val
 }
 
-// 计算属性
-const networkTableData = computed(() => {
+// 搜索过滤逻辑
+const filteredNetworkInterfaces = computed(() => {
+  const query = searchQueries.value.network.toLowerCase().trim()
+  if (!query) return networkInterfaces.value
+  return networkInterfaces.value.filter(item =>
+    item.interface.toLowerCase().includes(query) ||
+    item.ip.toLowerCase().includes(query) ||
+    item.mask.toLowerCase().includes(query) ||
+    item.gateway.toLowerCase().includes(query) ||
+    item.status.toLowerCase().includes(query)
+  )
+})
+
+const filteredProcesses = computed(() => {
+  const query = searchQueries.value.process.toLowerCase().trim()
+  if (!query) return processes.value
+  return processes.value.filter(item =>
+    item.name.toLowerCase().includes(query) ||
+    item.pid.toString().includes(query) ||
+    item.path.toLowerCase().includes(query) ||
+    item.user.toLowerCase().includes(query) ||
+    item.permission.toLowerCase().includes(query)
+  )
+})
+
+const filteredServices = computed(() => {
+  const query = searchQueries.value.service.toLowerCase().trim()
+  if (!query) return services.value
+  return services.value.filter(item =>
+    item.display_name.toLowerCase().includes(query) ||
+    item.status.toLowerCase().includes(query) ||
+    item.path.toLowerCase().includes(query)
+  )
+})
+
+const filteredNetworkServices = computed(() => {
+  const query = searchQueries.value.networkService.toLowerCase().trim()
+  if (!query) return processInfo.value
+  return processInfo.value.filter(item =>
+    item.name.toLowerCase().includes(query) ||
+    item.pid.toString().includes(query) ||
+    item.exe_path.toLowerCase().includes(query) ||
+    item.protocols.some(p => p.toLowerCase().includes(query))
+  )
+})
+
+const filteredFirewallRules = computed(() => {
+  const query = searchQueries.value.firewall.toLowerCase().trim()
+  if (!query) return firewallRules.value
+  return firewallRules.value.filter(item =>
+    item.num.toString().includes(query) ||
+    item.target.toLowerCase().includes(query) ||
+    item.prot.toLowerCase().includes(query) ||
+    item.source.toLowerCase().includes(query) ||
+    item.destination.toLowerCase().includes(query) ||
+    item.pkts.toString().includes(query) ||
+    item.bytes.toString().includes(query)
+  )
+})
+
+const filteredInstalledApps = computed(() => {
+  const query = searchQueries.value.app.toLowerCase().trim()
+  if (!query) return installedApps.value
+  return installedApps.value.filter(item =>
+    item.name.toLowerCase().includes(query) ||
+    item.version.toLowerCase().includes(query) ||
+    item.installDate.toLowerCase().includes(query)
+  )
+})
+
+// 计算属性 - 分页数据
+const filteredNetworkTableData = computed(() => {
   const start = (drawers.value.network.currentPage - 1) * drawers.value.network.pageSize
-  return networkInterfaces.value.slice(start, start + drawers.value.network.pageSize)
+  return filteredNetworkInterfaces.value.slice(start, start + drawers.value.network.pageSize)
 })
 
-const processTableData = computed(() => {
+const filteredProcessTableData = computed(() => {
   const start = (drawers.value.process.currentPage - 1) * drawers.value.process.pageSize
-  return processes.value.slice(start, start + drawers.value.process.pageSize)
+  return filteredProcesses.value.slice(start, start + drawers.value.process.pageSize)
 })
 
-const serviceTableData = computed(() => {
+const filteredServiceTableData = computed(() => {
   const start = (drawers.value.service.currentPage - 1) * drawers.value.service.pageSize
-  return services.value.slice(start, start + drawers.value.service.pageSize)
+  return filteredServices.value.slice(start, start + drawers.value.service.pageSize)
 })
 
-const firewallTableData = computed(() => {
+const filteredNetworkServiceTableData = computed(() => {
+  const start = (drawers.value.networkService.currentPage - 1) * drawers.value.networkService.pageSize
+  return filteredNetworkServices.value.slice(start, start + drawers.value.networkService.pageSize)
+})
+
+const filteredFirewallTableData = computed(() => {
   const start = (drawers.value.firewall.currentPage - 1) * drawers.value.firewall.pageSize
-  return firewallRules.value.slice(start, start + drawers.value.firewall.pageSize)
+  return filteredFirewallRules.value.slice(start, start + drawers.value.firewall.pageSize)
 })
 
-const appTableData = computed(() => {
+const filteredAppTableData = computed(() => {
   const start = (drawers.value.app.currentPage - 1) * drawers.value.app.pageSize
-  return installedApps.value.slice(start, start + drawers.value.app.pageSize)
+  return filteredInstalledApps.value.slice(start, start + drawers.value.app.pageSize)
 })
 
 const processInfoTableData = computed(() => {

@@ -22,22 +22,48 @@ async def execute_rule(rule: Rule) -> dict:
             is_compliant = result.returncode == 0
             
             if "must_contain" in rule.expected_result:
-                if not re.search(rule.expected_result["must_contain"], output, re.IGNORECASE):
+                expected_result = rule.expected_result
+                if isinstance(expected_result, str):
+                    try:
+                        expected_result = json.loads(expected_result)
+                    except json.JSONDecodeError:
+                        expected_result = eval(expected_result)
+                if not re.search(expected_result["must_contain"], output, re.IGNORECASE):
                     is_compliant = False
             if "must_not_contain" in rule.expected_result:
-                if re.search(rule.expected_result["must_not_contain"], output, re.IGNORECASE):
+                expected_result = rule.expected_result
+                if isinstance(expected_result, str):
+                    try:
+                        expected_result = json.loads(expected_result)
+                    except json.JSONDecodeError:
+                        expected_result = eval(expected_result)
+                if re.search(expected_result["must_not_contain"], output, re.IGNORECASE):
                     is_compliant = False
 
         elif rule.rule_type == "file":
+            expected_result = rule.expected_result
+            if isinstance(expected_result, str):
+                try:
+                    expected_result = json.loads(expected_result)
+                except json.JSONDecodeError:
+                    expected_result = eval(expected_result)
+            
             file_path = rule.params["path"]
             with open(file_path, "rb") as f:
                 content = f.read()
             hash_func = getattr(hashlib, rule.params["hash_type"])
             file_hash = hash_func(content).hexdigest()
-            is_compliant = file_hash == rule.expected_result["expected_hash"]
+            is_compliant = file_hash == expected_result["expected_hash"]
             output = f"File check: {file_path}"
 
         elif rule.rule_type == "service":
+            expected_result = rule.expected_result
+            if isinstance(expected_result, str):
+                try:
+                    expected_result = json.loads(expected_result)
+                except json.JSONDecodeError:
+                    expected_result = eval(expected_result)
+            
             # Linux 服务检查
             service_name = rule.params["service_name"]
             result = subprocess.run(
@@ -47,15 +73,22 @@ async def execute_rule(rule: Rule) -> dict:
                 text=True,
                 timeout=5
             )
-            is_compliant = rule.expected_result["expected_status"] in result.stdout
+            is_compliant = expected_result["expected_status"] in result.stdout
             output = result.stdout + result.stderr
 
         elif rule.rule_type == "registry":
+            expected_result = rule.expected_result
+            if isinstance(expected_result, str):
+                try:
+                    expected_result = json.loads(expected_result)
+                except json.JSONDecodeError:
+                    expected_result = eval(expected_result)
+            
             # Windows 注册表检查
             hive = getattr(winreg, rule.params["hive"])
             key = winreg.OpenKey(hive, rule.params["key"])
             value, _ = winreg.QueryValueEx(key, rule.params["value_name"])
-            is_compliant = value == rule.expected_result["expected_value"]
+            is_compliant = value == expected_result["expected_value"]
             output = f"Registry check: {rule.params['key']}\\{rule.params['value_name']}"
 
         elif rule.rule_type == "python_script":
@@ -125,3 +158,25 @@ async def run_security_checks(task_id: str):
         await Task.filter(id=task_id).update(progress=idx + 1)
 
     await Task.filter(id=task_id).update(status="completed")
+
+async def run_single_security_check(task_id: str, rule_name: str):
+    """异步执行单个规则检测"""
+    from rules.rules_models import Task
+    task = await Task.get(id=task_id)
+    
+    # 查询指定名称的规则
+    rule = await Rule.filter(name=rule_name).first()
+    if not rule:
+        await Task.filter(id=task_id).update(status="failed", total=1, progress=0)
+        return
+    
+    await Task.filter(id=task_id).update(total=1, status="running")
+    
+    result = await execute_rule(rule)
+    await TaskResult.create(
+        task_id=task_id,
+        rule_id=rule.id,
+        output=json.dumps(result),
+        is_compliant=result["compliant"]
+    )
+    await Task.filter(id=task_id).update(progress=1, status="completed")

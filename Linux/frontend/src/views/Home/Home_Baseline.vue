@@ -61,8 +61,15 @@
 
       <el-col :span="12">
         <el-card>
-          <div slot="header" class="main-content">
+          <div slot="header" class="main-content"
+            style="display: flex; justify-content: space-between; align-items: center;">
             <span>动态基线状态</span>
+            <div>
+              <el-select v-model="selectedBaseline" placeholder="选择基线" size="small" @change="handleBaselineChange">
+                <el-option v-for="baseline in baselineOptions" :key="baseline.metric_name" :label="baseline.metric_name"
+                  :value="baseline.metric_name" />
+              </el-select>
+            </div>
           </div>
           <div ref="lineChart" class="chart"></div>
         </el-card>
@@ -109,6 +116,10 @@ const recentScans = ref([])
 const baselineTimer = ref(null)
 const baselineChart = ref(null)
 
+// 基线选择相关数据
+const selectedBaseline = ref('cpu_usage')
+const baselineOptions = ref([])
+
 // 时间格式化函数
 function formatTime(isoString) {
   const date = new Date(isoString)
@@ -120,16 +131,33 @@ function formatTime(isoString) {
   return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
-// 获取CPU基线数据并更新图表
-async function fetchCpuBaselineData() {
+// 获取基线配置列表
+async function fetchBaselineConfigs() {
   try {
-    // 获取CPU使用率基线数据
-    const cpuBaselineRes = await fetch('http://localhost:8000/baseline/latest/cpu_usage')
-    if (!cpuBaselineRes.ok) throw new Error('获取CPU基线数据失败')
-    const cpuBaselineData = await cpuBaselineRes.json()
+    const res = await fetch('http://127.0.0.1:8000/baseline/configs')
+    if (!res.ok) throw new Error('获取基线配置失败')
+    const data = await res.json()
+    baselineOptions.value = data.data || []
+  } catch (error) {
+    console.error('获取基线配置异常:', error)
+  }
+}
 
-    // 处理CPU基线数据
-    const processedData = cpuBaselineData.data.map(item => ({
+// 处理基线选择变化
+async function handleBaselineChange(metricName) {
+  await fetchBaselineData(metricName)
+}
+
+// 获取基线数据并更新图表
+async function fetchBaselineData(metricName) {
+  try {
+    // 获取基线数据
+    const baselineRes = await fetch(`http://localhost:8000/baseline/latest/${metricName}`)
+    if (!baselineRes.ok) throw new Error(`获取${metricName}基线数据失败`)
+    const baselineData = await baselineRes.json()
+
+    // 处理基线数据
+    const processedData = baselineData.data.map(item => ({
       timestamp: formatTime(item.timestamp),
       actual: parseFloat(item.value.toFixed(1)),
       baseline: parseFloat(item.baseline.toFixed(1))
@@ -174,7 +202,9 @@ async function fetchCpuBaselineData() {
       },
       yAxis: {
         type: 'value',
-        name: 'CPU使用率 (%)'
+        name: metricName === 'cpu_usage' ? 'CPU使用率 (%)' :
+          metricName === 'memory_usage' ? '内存使用率 (%)' :
+            '使用率 (%)'
       },
       series: [
         {
@@ -196,22 +226,13 @@ async function fetchCpuBaselineData() {
           symbolSize: 6
         }
       ],
-      dataZoom: [
-        {
-          type: 'slider',
-          start: 0,
-          end: 100,
-          height: 12,
-          bottom: 10
-        }
-      ]
     }
 
     // 更新图表
-    baselineChart.value.setOption(baselineOption)
+    baselineChart.value.setOption(baselineOption, true)
 
   } catch (error) {
-    console.error('CPU基线数据获取异常:', error)
+    console.error(`${metricName}基线数据获取异常:`, error)
   }
 }
 
@@ -267,11 +288,16 @@ onMounted(async () => {
     }
     pieInstance.setOption(pieOption)
 
-    // 首次获取CPU基线数据
-    await fetchCpuBaselineData()
+    // 获取基线配置
+    await fetchBaselineConfigs()
+
+    // 首次获取基线数据
+    await fetchBaselineData(selectedBaseline.value)
 
     // 设置定时器（每60秒执行一次）
-    baselineTimer.value = setInterval(fetchCpuBaselineData, 60000)
+    baselineTimer.value = setInterval(() => {
+      fetchBaselineData(selectedBaseline.value)
+    }, 60000)
 
     // 获取最近三个任务数据
     const lastThreeRes = await fetch('http://127.0.0.1:8000/last-three')

@@ -5,6 +5,8 @@
       <header class="header">
         <div class="button-group">
           <button class="blue-button" @click="showRuleDialog = true">自定义规则</button>
+          <!-- 单个规则检测按钮 -->
+          <button class="blue-button" @click="showSingleRuleDialog = true" :disabled="isLoading">单个规则检测</button>
         </div>
         <!-- 自定义规则弹窗 -->
         <div v-if="showRuleDialog" class="custom-modal">
@@ -20,7 +22,7 @@
                 <el-steps :active="activeStep" finish-status="success" simple style="margin-bottom: 20px">
                   <el-step title="基础信息"></el-step>
                   <el-step title="参数设置"></el-step>
-                  <el-step title="基线信息"></el-step>
+                  <el-step title="规则信息"></el-step>
                 </el-steps>
                 <!-- 步骤内容 -->
                 <div class="step-content">
@@ -118,11 +120,11 @@
                       </div>
                     </div>
                   </div>
-                  <!-- 步骤三：基线信息 -->
+                  <!-- 步骤三：规则信息 -->
                   <div v-if="activeStep === 2" class="step-pane">
                     <div class="form-section">
-                      <h3>基线信息</h3>
-                      <el-form-item label="基线标准" prop="baseline_standard">
+                      <h3>规则信息</h3>
+                      <el-form-item label="规则标准" prop="baseline_standard">
                         <el-input v-model="ruleForm.baseline_standard" type="textarea" :rows="2" />
                       </el-form-item>
                       <el-form-item label="风险描述" prop="risk_description">
@@ -143,6 +145,33 @@
                   <button v-if="activeStep < 2" class="blue-button" @click="nextStep">下一步</button>
                   <button v-else class="blue-button" @click="submitRule">提交规则</button>
                   <button class="gray-button" @click="closeRuleDialog">取消</button>
+                </div>
+              </el-form>
+            </div>
+          </div>
+        </div>
+
+        <!-- 单个规则检测弹窗 -->
+        <div v-if="showSingleRuleDialog" class="custom-modal">
+          <div class="modal-content" style="width: 500px;">
+            <div class="modal-header">
+              <span class="modal-title">单个规则检测</span>
+              <span class="modal-close" @click="closeSingleRuleDialog">&times;</span>
+            </div>
+            <div class="modal-body">
+              <el-form ref="singleRuleFormRef" :model="singleRuleForm" label-width="100px" :rules="singleRuleFormRules">
+                <el-form-item label="选择规则" prop="ruleName">
+                  <el-select v-model="singleRuleForm.ruleName" placeholder="请选择要检测的规则" filterable style="width: 100%;">
+                    <el-option v-for="rule in availableRules" :key="rule.name" :label="rule.description"
+                      :value="rule.name">
+                      <span style="float: left">{{ rule.description }}</span>
+                      <span style="float: right; color: #8492a6; font-size: 13px">{{ rule.name }}</span>
+                    </el-option>
+                  </el-select>
+                </el-form-item>
+                <div class="modal-footer" style="text-align: right; padding: 0;">
+                  <button class="blue-button" @click="executeSingleRuleScan">开始检测</button>
+                  <button class="gray-button" @click="closeSingleRuleDialog">取消</button>
                 </div>
               </el-form>
             </div>
@@ -246,6 +275,7 @@ export default {
       lastScanTime: '',
       showReportDialog: false,
       showRuleDialog: false,
+      showSingleRuleDialog: false,
       chartInstance: null,
       isScanned: false,
       isLoading: false,
@@ -261,6 +291,7 @@ export default {
       selectedRisk: {},
       risks: [],
       rules: [],
+      availableRules: [], // 可用于单个检测的规则列表
       totalItems: 0,
       compliantCount: 0,
       nonCompliantCount: 0,
@@ -278,6 +309,10 @@ export default {
         risk_description: '',
         solution: '',
         tip: ''
+      },
+      // 单个规则检测表单数据
+      singleRuleForm: {
+        ruleName: ''
       },
       // 表单验证规则
       rules: {
@@ -301,6 +336,10 @@ export default {
         risk_description: [{ required: true, message: '请输入风险描述', trigger: 'blur' }],
         solution: [{ required: true, message: '请输入解决方案', trigger: 'blur' }],
         tip: [{ required: true, message: '请输入温馨提示', trigger: 'blur' }]
+      },
+      // 单个规则检测表单验证规则
+      singleRuleFormRules: {
+        ruleName: [{ required: true, message: '请选择要检测的规则', trigger: 'change' }]
       },
       loadingInstance: null
     };
@@ -460,6 +499,106 @@ export default {
         this.loadingInstance = null;
       }
     },
+    // 执行单个规则检测
+    async executeSingleRuleScan() {
+      this.$refs.singleRuleFormRef.validate(async (valid) => {
+        if (!valid) return;
+
+        // 在验证通过后立即获取规则名称的值
+        const selectedRuleName = this.singleRuleForm.ruleName;
+        console.log("Selected rule name after validation:", selectedRuleName);
+
+        if (!selectedRuleName) {
+          this.handleError('未选择规则');
+          return;
+        }
+
+        this.isLoading = true;
+        this.isScanned = false;
+        this.risks = [];
+        this.closeSingleRuleDialog();
+
+        // 创建区域加载动画
+        this.loadingInstance = this.$loading({
+          target: this.$refs.riskListContainer,
+          text: '正在扫描中...',
+          spinner: 'el-icon-loading',
+          background: 'rgba(255, 255, 255, 0.7)',
+          lock: true
+        });
+
+        try {
+          // 清除旧缓存
+          localStorage.removeItem(SCAN_CACHE_KEY);
+
+          // 发送请求前再次检查规则名称
+          console.log("About to send request with rule name:", selectedRuleName);
+
+          const taskResponse = await axios.post('http://127.0.0.1:8000/scan/single', {
+            name: selectedRuleName
+          });
+          this.taskId = taskResponse.data.task_id;
+
+          // 获取规则列表
+          const rulesResponse = await axios.get('http://127.0.0.1:8000/rules');
+          this.rules = rulesResponse.data;
+
+          // 开始轮询进度
+          this.pollingInterval = setInterval(async () => {
+            try {
+              const progressResponse = await axios.get(`http://127.0.0.1:8000/scan/${this.taskId}/progress`);
+              if (progressResponse.data.status === 'completed') {
+                clearInterval(this.pollingInterval);
+                this.pollingInterval = null;
+                // 更新进度数据
+                this.totalItems = progressResponse.data.total;
+                this.compliantCount = progressResponse.data.compliant_count;
+                this.nonCompliantCount = progressResponse.data.non_compliant_count;
+                // 计算得分 
+                this.score = this.compliantCount === 1 ? 100 : 0;
+                // 获取扫描结果
+                const resultsResponse = await axios.get(`http://127.0.0.1:8000/scan/${this.taskId}/results`);
+                // 处理非合规结果
+                const nonCompliantResults = resultsResponse.data.filter(item => !item.compliant);
+                // 匹配规则信息生成风险列表
+                this.risks = nonCompliantResults.map(result => {
+                  const rule = this.rules.find(r => r.name === result.rule_name);
+                  return {
+                    title: rule?.description || result.rule_name,
+                    level: this.formatSeverityLevel(rule?.severity_level),
+                    description: rule?.risk_description || '暂无描述',
+                    solution: rule?.solution || '暂无解决方案',
+                    tip: rule?.tip || '暂无提示',
+                    ignored: false
+                  };
+                });
+                this.riskCount = this.risks.length;
+                this.lastScanTime = new Date().toLocaleString();
+                this.isScanned = true;
+                this.isLoading = false;
+                // 保存缓存
+                this.saveCachedData();
+                this.$nextTick(() => {
+                  this.initChart();
+                });
+                this.loadingInstance.close();
+                this.loadingInstance = null;
+              }
+            } catch (error) {
+              console.error('轮询进度失败:', error);
+              this.handleError('扫描过程中发生错误');
+              this.loadingInstance.close();
+              this.loadingInstance = null;
+            }
+          }, 2000); // 每2秒轮询一次
+        } catch (error) {
+          console.error('启动扫描任务失败:', error);
+          this.handleError('无法启动扫描任务: ' + (error.response?.data?.detail || error.message));
+          this.loadingInstance.close();
+          this.loadingInstance = null;
+        }
+      });
+    },
     formatSeverityLevel(level) {
       switch (level) {
         case 'high': return '高危';
@@ -610,6 +749,11 @@ export default {
       this.activeStep = 0;
       this.$refs.ruleFormRef.resetFields();
     },
+    // 关闭单个规则检测弹窗
+    closeSingleRuleDialog() {
+      this.showSingleRuleDialog = false;
+      this.$refs.singleRuleFormRef.resetFields();
+    },
     // 上一步
     prevStep() {
       if (this.activeStep > 0) {
@@ -676,6 +820,19 @@ export default {
       if (!newVal && this.loadingInstance) {
         this.loadingInstance.close();
         this.loadingInstance = null;
+      }
+    },
+    showSingleRuleDialog(val) {
+      // 当打开单个规则检测弹窗时，获取可用规则列表
+      if (val) {
+        axios.get('http://127.0.0.1:8000/rules')
+          .then(response => {
+            this.availableRules = response.data;
+          })
+          .catch(error => {
+            console.error('获取规则列表失败:', error);
+            ElMessage.error('获取规则列表失败');
+          });
       }
     }
   }

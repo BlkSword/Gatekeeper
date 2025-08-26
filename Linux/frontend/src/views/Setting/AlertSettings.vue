@@ -39,7 +39,7 @@ import axios from 'axios'
 
 // 创建axios实例
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'http://127.0.0.1:8000',
   timeout: 10000,
 })
 
